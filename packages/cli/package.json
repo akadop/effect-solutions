@@ -1,15 +1,26 @@
 {
-  "name": "effect-best-practices",
+  "name": "@effect-solutions/effect-best-practices",
   "version": "0.1.0",
   "description": "CLI installer for Effect TypeScript best practices skill",
   "type": "module",
   "bin": {
-    "effect-best-practices": "./dist/cli.js"
+    "effect-best-practices": "./dist/effect-best-practices"
   },
   "scripts": {
     "build": "bun build src/cli.ts --outdir dist --target bun",
+    "build:exe": "bun build src/cli.ts --compile --outfile dist/effect-best-practices",
+    "prepublishOnly": "rm -rf dist && bun run build && bun run build:exe",
     "dev": "bun src/cli.ts",
-    "prepare": "effect-language-service patch"
+    "prepare": "[ -n \"$CI\" ] || effect-language-service patch"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "bun": ">=1.1.0"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.1.45",
