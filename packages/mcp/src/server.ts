@@ -53,18 +53,20 @@ const SearchTool = Tool.make("search_effect_solutions", {
   parameters: {
     query: Schema.String,
   },
-  success: Schema.Array(
-    Schema.Struct({
-      slug: Schema.String,
-      title: Schema.String,
-      description: Schema.String,
-      excerpt: Schema.String,
-      score: Schema.Number,
-    })
-  ),
+  success: Schema.Struct({
+    results: Schema.Array(
+      Schema.Struct({
+        slug: Schema.String,
+        title: Schema.String,
+        description: Schema.String,
+        excerpt: Schema.String,
+        score: Schema.Number,
+      })
+    ),
+  }),
 });
 
-const searchDocs = (query: string) =>
+const searchDocs = ({ query }: { query: string }) =>
   Effect.sync(() => {
     const normalizedQuery = query.toLowerCase().trim();
     const terms = normalizedQuery.split(/\s+/);
@@ -115,7 +117,7 @@ const searchDocs = (query: string) =>
       .filter((result) => result.score > 0)
       .sort((a, b) => b.score - a.score);
 
-    return results;
+    return { results };
   });
 
 const toolkit = Toolkit.make(SearchTool);
