@@ -111,6 +111,7 @@ const badProgram = getA().pipe(
 
 - Import classes/values **without** `type` (for constructors)
 - Use `type` only for interfaces/type aliases
+- Prefer aggregate entry points (e.g., `import { Effect, Layer } from "effect"`) instead of deep module paths like `"effect/Layer"`. This keeps tree-shaking consistent and matches Effect’s recommended style.
 
 **Example:**
 - ✅ Good: `import { Episode, EpisodeId } from "../types.js"`
