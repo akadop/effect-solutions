@@ -6,21 +6,21 @@ import { SITE_DEPLOYMENT_URL } from "@/constants/urls";
 export const metadata: Metadata = {
   title: "References",
   description:
-    "Best practices and reference guides for building Effect TypeScript applications",
+    "Effect Solutions reference guides for building Effect TypeScript applications",
   openGraph: {
-    title: "Effect Best Practices",
+    title: "Effect Solutions",
     description:
-      "Best practices and reference guides for building Effect TypeScript applications",
+      "Effect Solutions reference guides for building Effect TypeScript applications",
     url: `${SITE_DEPLOYMENT_URL}/references`,
-    siteName: "Effect Best Practices",
+    siteName: "Effect Solutions",
     locale: "en_US",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Effect Best Practices",
+    title: "Effect Solutions",
     description:
-      "Best practices and reference guides for building Effect TypeScript applications",
+      "Effect Solutions reference guides for building Effect TypeScript applications",
   },
 };
 

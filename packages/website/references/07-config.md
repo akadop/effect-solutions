@@ -135,8 +135,8 @@ Config.url("API_URL")
 // Durations
 Config.duration("TIMEOUT")
 
-// Arrays
-Config.array(Config.string("TAGS"), "TAGS")
+// Arrays (comma-separated values in env vars)
+Config.array(Config.string(), "TAGS")
 ```
 
 ## Defaults and Fallbacks
@@ -189,37 +189,54 @@ Override where config is loaded from using `Layer.setConfigProvider`:
 ```typescript
 import { ConfigProvider, Layer } from "effect"
 
-// From a Map (useful for tests)
-const testConfig = ConfigProvider.fromMap(
-  new Map([
-    ["API_KEY", "test-key"],
-    ["PORT", "3000"],
-  ])
+const TestConfigLayer = Layer.setConfigProvider(
+  ConfigProvider.fromMap(
+    new Map([
+      ["API_KEY", "test-key"],
+      ["PORT", "3000"],
+    ])
+  )
 )
 
-const TestConfigLayer = Layer.setConfigProvider(testConfig)
-
-// From JSON
-const jsonConfig = ConfigProvider.fromJson({
-  API_KEY: "prod-key",
-  PORT: 8080,
-})
-
-// Nested prefix
-const prefixedConfig = ConfigProvider.fromEnv().pipe(
-  ConfigProvider.nested("APP") // Reads APP_API_KEY, APP_PORT, etc.
+const JsonConfigLayer = Layer.setConfigProvider(
+  ConfigProvider.fromJson({
+    API_KEY: "prod-key",
+    PORT: 8080,
+  })
 )
+
+const PrefixedConfigLayer = Layer.setConfigProvider(
+  ConfigProvider.fromEnv().pipe(
+    ConfigProvider.nested("APP") // Reads APP_API_KEY, APP_PORT, etc.
+  )
+)
+
+// Usage: provide whichever layer matches the environment
+Effect.runPromise(program.pipe(Effect.provide(TestConfigLayer)))
 ```
 
-**Usage in tests:**
+## Usage in Tests
+
+Combine provider overrides with dedicated test layers for your config services:
 
 ```typescript
-import { Context, Effect, Layer } from "effect"
+import { Config, ConfigProvider, Context, Effect, Layer, Redacted } from "effect"
 
-class ApiConfig extends Context.Tag("ApiConfig")<ApiConfig, { value: string }>() {
-  static readonly Live = Layer.succeed(ApiConfig, { value: "prod" })
-  static readonly Test = Layer.succeed(ApiConfig, { value: "test" })
+class ApiConfig extends Context.Tag("ApiConfig")<ApiConfig, { apiKey: Redacted.Redacted }>() {
+  static readonly Live = Layer.effect(
+    ApiConfig,
+    Effect.gen(function* () {
+      const apiKey = yield* Config.redacted("API_KEY")
+      return ApiConfig.of({ apiKey })
+    })
+  )
+
+  static readonly Test = Layer.succeed(ApiConfig, ApiConfig.of({ apiKey: Redacted.make("test-key") }))
 }
+
+const TestConfigProvider = Layer.setConfigProvider(
+  ConfigProvider.fromMap(new Map([["API_KEY", "test-key"]]))
+)
 
 const program = Effect.gen(function* () {
   const config = yield* ApiConfig
@@ -227,17 +244,15 @@ const program = Effect.gen(function* () {
 })
 
 // Production
-program.pipe(Effect.provide(ApiConfig.Live))
+Effect.runPromise(program.pipe(Effect.provide(ApiConfig.Live)))
 
-// Tests with custom config provider
-const TestConfigLayer = Layer.empty
-program.pipe(
-  Effect.provide(ApiConfig.Live),
-  Effect.provide(TestConfigLayer)
+// Tests - override the provider + use the Test layer for dependencies
+Effect.runPromise(
+  program.pipe(
+    Effect.provide(TestConfigProvider),
+    Effect.provide(ApiConfig.Test)
+  )
 )
-
-// Or simpler - just use Test layer
-program.pipe(Effect.provide(ApiConfig.Test))
 ```
 
 ## Using Redacted for Secrets

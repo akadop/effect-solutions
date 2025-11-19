@@ -1,9 +1,8 @@
----
-name: Effect Best Practices
-description: Guide for building robust Effect TypeScript applications. Use when setting up Effect projects, implementing error handling patterns, configuring TypeScript for Effect, choosing data types, or applying Effect best practices. Critical for ensuring type-safe Effect code and avoiding common pitfalls.
+name: Effect Solutions
+description: Guide for building robust Effect TypeScript applications. Use when setting up Effect projects, configuring TypeScript, choosing data types, handling errors, or applying Effect service patterns. Critical for ensuring type-safe Effect code and avoiding common pitfalls.
 ---
 
-# Effect Best Practices
+# Effect Solutions
 
 This skill provides comprehensive guidance for building production-ready applications using Effect TypeScript.
 
@@ -21,21 +20,23 @@ Use this skill when:
 
 ### Reference Documentation
 
-All best practices are organized in the `references/` directory:
+The CLI packages the entire `packages/website/references/` tree, so every markdown file ships with the skill:
 
-- **repo-setup.md** - Project setup, dependencies, and configuration
-- **tsconfig.md** - TypeScript configuration for Effect projects
-- **error-handling.md** - Error handling patterns and best practices
-- **data-types.md** - Choosing the right Effect data types
-- **best-practices.md** - General Effect best practices and patterns
-- **index.md** - Overview and quick reference
+- **00-index.md** – Overview and quick reference
+- **01-repo-setup.md** – Effect Language Service + project bootstrap
+- **02-tsconfig.md** – TypeScript configuration aligned with Effect
+- **03-services-and-layers.md** – Dependency injection patterns
+- **04-effect-style.md** – Coding conventions (`Effect.fn`, `Effect.gen`, imports)
+- **05-data-types.md** – Schemas, unions, branded IDs, JSON interoperability
+- **06-error-handling.md** – Tagged errors, matching, defects
+- **07-config.md** – Using `Config` + layers for application settings
 
 ### Workflow
 
-1. Identify the specific area (setup, error handling, types, etc.)
+1. Identify the specific area (setup, error handling, data, config, etc.)
 2. Read the relevant reference document from `references/`
 3. Apply the patterns and guidance to the codebase
-4. Verify type safety and best practice compliance
+4. Verify type safety and best practice compliance, then rerun `effect-solutions` if distributing to Claude Code
 
 ## Key Principles
 

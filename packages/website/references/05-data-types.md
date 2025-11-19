@@ -7,6 +7,13 @@ order: 5
 
 TypeScript's built-in tools for modeling data are limited. Effect's Schema library provides a robust alternative with runtime validation, serialization, and type safety built in.
 
+## Why Schema?
+
+- **Runtime validation** – parse untyped data (HTTP, CLI, config) safely.
+- **Serialization** – encode rich domain objects to JSON/DTOs with one definition.
+- **Branding** – prevent ID mix-ups without hand-written wrappers.
+- **Tooling** – share types between the CLI and website without duplicating logic.
+
 ## Schema Classes
 
 Use `Schema.Class` for composite data models with multiple fields:
@@ -122,3 +129,25 @@ function getUser(id: UserId) { return id }
 3. **IDs** → Branded types with `Schema.brand()`
 4. **Compose** → Use branded IDs inside schema classes
 5. **Never** → Use plain strings for IDs or raw TypeScript types for models
+
+## JSON Encoding & Decoding
+
+Use the same schema to validate unknown input and produce wire-safe JSON payloads:
+
+```typescript
+import { Schema } from "effect"
+
+// Reuse the `User` schema/class defined in the sections above
+const decodeUser = Schema.decodeUnknownSync(User)
+const encodeUser = Schema.encodeSync(User)
+
+// Parsing untyped input
+const raw = JSON.parse('{"id":"user-1","name":"Lina","email":"lina@example.com"}')
+const user = decodeUser(raw) // throws ConfigError on invalid payload
+
+// Serializing to JSON (e.g., storing or sending to another service)
+const jsonReady = encodeUser(user) // typed as typeof User.Encoded
+const json = JSON.stringify(jsonReady)
+```
+
+Having a single source of truth means every boundary (HTTP handlers, CLI arguments, file IO) can reuse the same schema for both validation and serialization.

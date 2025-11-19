@@ -1,10 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
-# Package the Effect Best Practices skill for distribution
+# Package the Effect Solutions skill for distribution
 
 ROOT_DIR=$(cd -- "$(dirname -- "$0")/.." && pwd)
-SKILL_NAME="effect-best-practices"
+SKILL_NAME="effect-solutions"
 DIST_DIR="${ROOT_DIR}/dist"
 SKILL_DIR="${DIST_DIR}/${SKILL_NAME}"
 REFERENCES_DIR="${ROOT_DIR}/packages/website/references"

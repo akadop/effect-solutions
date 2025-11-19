@@ -1,4 +1,4 @@
-# Effect Best Practices - Project Plan
+# Effect Solutions - Project Plan
 
 ## Overview
 Multi-purpose repository for Effect TypeScript best practices with multiple distribution/usage modes.

@@ -8,7 +8,7 @@ import {
 } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   type FocusEvent,
   useCallback,
@@ -22,7 +22,13 @@ import VerticalCutReveal from "./VerticalCutReveal";
 
 interface ReferenceHeaderProps {
   referenceTitles: Record<string, string>;
+  titleSplitMode?: TitleSplitMode;
 }
+
+type TitleSplitMode = "characters" | "words";
+
+const isTitleSplitMode = (value: string | null): value is TitleSplitMode =>
+  value === "characters" || value === "words";
 
 const iconAnimationConfig = {
   initial: {
@@ -46,12 +52,17 @@ const iconAnimationConfig = {
   transition: { type: "spring" as const, visualDuration: 0.2, bounce: 0 },
 };
 
-export function ReferenceHeader({ referenceTitles }: ReferenceHeaderProps) {
+export function ReferenceHeader({
+  referenceTitles,
+  titleSplitMode = "words",
+}: ReferenceHeaderProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [isHovered, setIsHovered] = useState(false);
   const [hoverAnimationId, setHoverAnimationId] = useState(0);
   const [titleAnimationId, setTitleAnimationId] = useState(0);
   const previousTitleRef = useRef<string | null>(null);
+  const previousSplitModeRef = useRef<TitleSplitMode | null>(null);
   const {
     handleHover: playHoverSfx,
     handleClick: playClickSfx,
@@ -117,24 +128,34 @@ export function ReferenceHeader({ referenceTitles }: ReferenceHeaderProps) {
     }
   }
 
+  const forcedSplitMode = searchParams.get("titleSplit");
+  const resolvedSplitMode = isTitleSplitMode(forcedSplitMode)
+    ? forcedSplitMode
+    : titleSplitMode;
+
   useEffect(() => {
     if (previousTitleRef.current === null) {
       previousTitleRef.current = displayTitle;
+      previousSplitModeRef.current = resolvedSplitMode;
       return;
     }
 
-    if (previousTitleRef.current === displayTitle) {
+    const didTitleChange = previousTitleRef.current !== displayTitle;
+    const didSplitChange = previousSplitModeRef.current !== resolvedSplitMode;
+
+    if (!didTitleChange && !didSplitChange) {
       return;
     }
 
     previousTitleRef.current = displayTitle;
+    previousSplitModeRef.current = resolvedSplitMode;
     setTitleAnimationId((id) => id + 1);
-  }, [displayTitle]);
+  }, [displayTitle, resolvedSplitMode]);
 
   const iconKey = `${
     isHovered && !isReferencesPage ? "arrow" : "book"
   }-${hoverAnimationId}`;
-  const titleKey = `${displayTitle}-${titleAnimationId}`;
+  const titleKey = `${displayTitle}-${resolvedSplitMode}-${titleAnimationId}`;
 
   return (
     <header className="border-b border-neutral-800 h-16">
@@ -185,7 +206,7 @@ export function ReferenceHeader({ referenceTitles }: ReferenceHeaderProps) {
               <AnimatePresence mode="popLayout" initial={false}>
                 <div className="ml-3" key={titleKey}>
                   <VerticalCutReveal
-                    splitBy="characters"
+                    splitBy={resolvedSplitMode}
                     staggerDuration={0.025}
                     staggerFrom="first"
                     transition={{

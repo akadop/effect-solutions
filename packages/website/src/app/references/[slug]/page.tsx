@@ -27,12 +27,12 @@ export async function generateMetadata({
 
   if (!reference) {
     return {
-      title: "Reference Not Found - Effect Best Practices",
+      title: "Reference Not Found - Effect Solutions",
       description: "The requested reference could not be found",
     };
   }
 
-  const title = `${reference.title} - Effect Best Practices`;
+  const title = `${reference.title} - Effect Solutions`;
   const description = reference.description || reference.title;
 
   return {
@@ -42,7 +42,7 @@ export async function generateMetadata({
       title,
       description,
       url: `${SITE_DEPLOYMENT_URL}/references/${slug}`,
-      siteName: "Effect Best Practices",
+      siteName: "Effect Solutions",
       locale: "en_US",
       type: "website",
     },

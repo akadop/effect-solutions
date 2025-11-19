@@ -85,17 +85,26 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
     h2: ({ children, className, ...props }) => (
       <h2
         className={cn(
-          "text-xl font-semibold leading-snug text-neutral-100 mx-6 uppercase tracking-wide flex items-center gap-3",
+          "text-xl font-semibold leading-snug text-neutral-100 uppercase tracking-wide flex flex-col gap-6",
           className,
         )}
         {...props}
       >
-        <AsteriskIcon
-          size={18}
-          weight="bold"
-          className="text-neutral-500 shrink-0"
+        <span
+          className="w-full h-6 border-y border-[var(--color-border)] block"
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(-45deg, transparent, transparent 8px, var(--color-border) 8px, var(--color-border) 9px)",
+          }}
         />
-        {children}
+        <span className="flex items-center gap-3 px-6">
+          <AsteriskIcon
+            size={18}
+            weight="bold"
+            className="text-neutral-500 shrink-0"
+          />
+          {children}
+        </span>
       </h2>
     ),
     h3: ({ children, className, ...props }) => (
@@ -229,9 +238,7 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
                 footnoteId={footnoteId}
                 {...(anchorId !== undefined ? { anchorId } : {})}
                 href={href || `#fn-${footnoteId}`}
-                {...(ariaDescribedBy !== undefined
-                  ? { ariaDescribedBy }
-                  : {})}
+                {...(ariaDescribedBy !== undefined ? { ariaDescribedBy } : {})}
               >
                 {child.props.children}
               </FootnoteReference>

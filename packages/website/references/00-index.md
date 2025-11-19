@@ -3,9 +3,9 @@ title: Overview
 order: 0
 ---
 
-# Effect Best Practices
+# Effect Solutions
 
-This is a selection of best practices and patterns for building applications with the Effect library.
+Effect Solutions collects best practices and patterns for building applications with the Effect library.
 
 ## Quick Reference
 
