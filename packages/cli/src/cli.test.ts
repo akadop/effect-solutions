@@ -1,36 +1,37 @@
 import { describe, expect, test } from "bun:test";
-import { renderEntryDocument, renderTopicList, renderTopics } from "./cli";
-import { TOPICS } from "./docs-manifest";
+import { renderDocList, renderDocs } from "./cli";
+import { DOCS } from "./docs-manifest";
 
 describe("effect-solutions CLI docs", () => {
-  test("entry document greets humans and agents", () => {
-    const entry = renderEntryDocument();
-    expect(entry).toContain("Hello human");
-    expect(entry).toContain("Hello agent");
-    expect(entry).toContain("bunx effect-solutions list");
-  });
-
-  test("list output includes all topics", () => {
-    const listOutput = renderTopicList();
-    for (const topic of TOPICS) {
-      expect(listOutput).toContain(topic.id);
-      expect(listOutput).toContain(topic.title);
-      expect(listOutput).toContain(topic.summary);
+  test("list output includes all docs", () => {
+    const listOutput = renderDocList();
+    for (const doc of DOCS) {
+      expect(listOutput).toContain(doc.slug);
+      expect(listOutput).toContain(doc.title);
+      if (doc.description) {
+        expect(listOutput).toContain(doc.description);
+      }
     }
   });
 
-  test("show renders multiple topics in order", () => {
-    const slice = TOPICS.slice(0, 2).map((topic) => topic.id);
-    const output = renderTopics(slice);
-    expect(output.indexOf(slice[0])).toBeLessThan(output.indexOf(slice[1]));
-    expect(output).toContain(`(${slice[0]})`);
-    expect(output).toContain(`(${slice[1]})`);
+  test("show renders multiple docs in order", () => {
+    const firstTwo = DOCS.slice(0, 2);
+    const slugs = firstTwo.map((doc) => doc.slug);
+    const output = renderDocs(slugs);
+    const firstSlug = slugs[0];
+    const secondSlug = slugs[1];
+    if (!firstSlug || !secondSlug) {
+      throw new Error("Expected at least 2 docs");
+    }
+    expect(output.indexOf(firstSlug)).toBeLessThan(output.indexOf(secondSlug));
+    expect(output).toContain(`(${firstSlug})`);
+    expect(output).toContain(`(${secondSlug})`);
     expect(output).toContain("---");
   });
 
-  test("show rejects unknown topics", () => {
-    expect(() => renderTopics(["unknown-topic"])).toThrowError(
-      /Unknown topic id/,
+  test("show rejects unknown doc slugs", () => {
+    expect(() => renderDocs(["unknown-doc"])).toThrowError(
+      /Unknown doc slug/,
     );
   });
 });

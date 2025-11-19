@@ -3,14 +3,14 @@
 import { BunContext, BunRuntime } from "@effect/platform-bun";
 import { Console, Effect, pipe } from "effect";
 import { Args, Command } from "@effect/cli";
-import { ENTRY, TOPIC_LOOKUP, TOPICS } from "./docs-manifest";
+import { DOC_LOOKUP, DOCS } from "./docs-manifest";
 import pc from "picocolors";
 
 const CLI_NAME = "effect-solutions";
 const CLI_VERSION = "0.2.0";
 
-const isTopicId = (value: string): value is keyof typeof TOPIC_LOOKUP =>
-  value in TOPIC_LOOKUP;
+const isDocSlug = (value: string): value is keyof typeof DOC_LOOKUP =>
+  value in DOC_LOOKUP;
 
 const colorizeCodeReferences = (text: string): string => {
   return text
@@ -23,76 +23,50 @@ const colorizeCodeReferences = (text: string): string => {
     .replace(/`[^`]+`/g, (match) => pc.dim(match));
 };
 
-export const renderEntryDocument = () => {
-  const lines = ENTRY.split("\n");
-  const colored = lines.map((line) => {
-    // Headers
-    if (line.startsWith("Hello human")) {
-      return pc.bold(pc.cyan(line));
-    }
-    if (line.startsWith("Hello agent")) {
-      return pc.bold(pc.magenta(line));
-    }
+const formatRow = (slugWidth: number, titleWidth: number) =>
+  (slug: string, title: string, description: string) =>
+    `${slug.padEnd(slugWidth)}  ${title.padEnd(titleWidth)}  ${description}`;
 
-    // Bullet points
-    if (line.startsWith("•")) {
-      const content = colorizeCodeReferences(line.slice(2));
-      return pc.dim("•") + " " + content;
-    }
-
-    // Indented list items (with -)
-    if (line.trim().startsWith("-")) {
-      let content = colorizeCodeReferences(line);
-      // Dim the separator and the dash
-      content = content.replace(/ — /, pc.dim(" — "));
-      return content.replace(/^(\s+)-/, (match) => match.slice(0, -1) + pc.dim("-"));
-    }
-
-    return line;
-  });
-  return `${colored.join("\n")}\n`;
-};
-
-const formatRow = (idWidth: number, titleWidth: number) =>
-  (id: string, title: string, summary: string) =>
-    `${id.padEnd(idWidth)}  ${title.padEnd(titleWidth)}  ${summary}`;
-
-export const renderTopicList = () => {
-  const idWidth = Math.max("ID".length, ...TOPICS.map((topic) => topic.id.length));
+export const renderDocList = () => {
+  const slugWidth = Math.max("Slug".length, ...DOCS.map((doc) => doc.slug.length));
   const titleWidth = Math.max(
     "Title".length,
-    ...TOPICS.map((topic) => topic.title.length),
+    ...DOCS.map((doc) => doc.title.length),
   );
 
-  const format = formatRow(idWidth, titleWidth);
-  const header = pc.bold(pc.cyan(format("ID", "Title", "Summary")));
-  const separator = pc.dim(`${"-".repeat(idWidth)}  ${"-".repeat(titleWidth)}  ${"-".repeat(20)}`);
+  const format = formatRow(slugWidth, titleWidth);
+  const header = pc.bold(pc.cyan(format("Slug", "Title", "Description")));
+  const separator = pc.dim(`${"-".repeat(slugWidth)}  ${"-".repeat(titleWidth)}  ${"-".repeat(20)}`);
 
-  const rows = TOPICS.map((topic) =>
-    format(pc.green(topic.id), pc.yellow(topic.title), pc.dim(topic.summary)));
+  const rows = DOCS.map((doc) =>
+    format(pc.green(doc.slug), pc.yellow(doc.title), pc.dim(doc.description)));
 
   const lines = [header, separator, ...rows];
 
   return `${lines.join("\n")}\n`;
 };
 
-export const renderTopics = (requested: ReadonlyArray<string>) => {
-  const ids = requested.map((id) => id.trim()).filter(Boolean);
+export const renderDocs = (requested: ReadonlyArray<string>) => {
+  const slugs = requested.map((slug) => slug.trim()).filter(Boolean);
 
-  if (ids.length === 0) {
-    throw new Error("Please provide at least one topic id.");
+  if (slugs.length === 0) {
+    throw new Error("Please provide at least one doc slug.");
   }
 
-  const unknown = ids.filter((id) => !isTopicId(id));
+  const unknown = slugs.filter((slug) => !isDocSlug(slug));
   if (unknown.length > 0) {
-    throw new Error(`Unknown topic id(s): ${unknown.join(", ")}`);
+    throw new Error(`Unknown doc slug(s): ${unknown.join(", ")}`);
   }
 
-  const uniqueIds = Array.from(new Set(ids));
-  const blocks = uniqueIds.map((id) => {
-    const topic = TOPIC_LOOKUP[id];
-    const title = pc.bold(pc.cyan(`## ${topic.title}`)) + " " + pc.dim(`(${topic.id})`);
-    return [title, "", topic.body.trim()]
+  const uniqueSlugs = Array.from(new Set(slugs)) as Array<keyof typeof DOC_LOOKUP>;
+  const blocks = uniqueSlugs.map((slug) => {
+    const doc = DOC_LOOKUP[slug];
+    if (!doc) {
+      throw new Error(`Internal error: doc ${slug} not found in lookup`);
+    }
+    const title = pc.bold(pc.cyan(`## ${doc.title}`)) + " " + pc.dim(`(${doc.slug})`);
+    const body = colorizeCodeReferences(doc.body.trim());
+    return [title, "", body]
       .filter(Boolean)
       .join("\n");
   });
@@ -100,30 +74,30 @@ export const renderTopics = (requested: ReadonlyArray<string>) => {
   return `${blocks.join("\n\n" + pc.dim("---") + "\n\n")}\n`;
 };
 
-const printEntryDocument = Console.log(renderEntryDocument());
+const listDocs = Console.log(renderDocList());
 
-const listTopics = Console.log(renderTopicList());
-
-const showTopics = (topics: ReadonlyArray<string>) =>
-  Effect.try({
-    try: () => renderTopics(topics),
-  }).pipe(Effect.flatMap((output) => Console.log(output)));
+const showDocs = (slugs: ReadonlyArray<string>) =>
+  Effect.try(() => renderDocs(slugs)).pipe(
+    Effect.flatMap((output) => Console.log(output)),
+  );
 
 const listCommand = Command.make("list").pipe(
-  Command.withDescription("List Effect Solutions documentation topics"),
-  Command.withHandler(() => listTopics),
+  Command.withDescription("List Effect Solutions documentation"),
+  Command.withHandler(() => listDocs),
 );
 
 const showCommand = Command.make("show", {
-  topics: Args.text({ name: "topic-id" }).pipe(Args.atLeast(1)),
+  slugs: Args.text({ name: "slug" }).pipe(Args.atLeast(1)),
 }).pipe(
-  Command.withDescription("Show one or more Effect Solutions topics"),
-  Command.withHandler(({ topics }) => showTopics(topics)),
+  Command.withDescription("Show one or more Effect Solutions docs"),
+  Command.withHandler(({ slugs }) => showDocs(slugs)),
 );
 
 export const cli = Command.make(CLI_NAME).pipe(
-  Command.withDescription("Effect Solutions CLI"),
-  Command.withHandler(() => printEntryDocument),
+  Command.withDescription(
+    "Effect Solutions CLI - Browse and search Effect best practices documentation. " +
+    "Built for both humans and AI agents to quickly access Effect patterns, setup guides, and configuration examples."
+  ),
   Command.withSubcommands([listCommand, showCommand]),
 );
 
