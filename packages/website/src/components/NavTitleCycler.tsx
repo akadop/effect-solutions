@@ -42,7 +42,15 @@ export function NavTitleCycler({ title, className }: NavTitleCyclerProps) {
 
   return (
     <div className={cn("relative flex-1 min-w-0", className)}>
-      <div className="relative overflow-hidden px-1.5 py-1">
+      <div
+        className="relative px-1.5 py-1"
+        style={{
+          maskImage:
+            "linear-gradient(to bottom, transparent 0%, black 12px, black calc(100% - 12px), transparent 100%)",
+          WebkitMaskImage:
+            "linear-gradient(to bottom, transparent 0%, black 12px, black calc(100% - 12px), transparent 100%)",
+        }}
+      >
         <AnimatePresence initial={false} mode="popLayout">
           <motion.span
             key={animationKey}
@@ -61,37 +69,7 @@ export function NavTitleCycler({ title, className }: NavTitleCyclerProps) {
             {renderedTitle}
           </motion.span>
         </AnimatePresence>
-        <FadeOverlays />
       </div>
     </div>
-  );
-}
-
-function FadeOverlays() {
-  const fadeClass =
-    "pointer-events-none absolute left-0 right-0 bg-neutral-950 group-hover:bg-neutral-900/50";
-
-  return (
-    <>
-      <div
-        className={cn(fadeClass, "top-0")}
-        style={{
-          height: 12,
-          maskImage: "linear-gradient(180deg, black 0%, transparent 100%)",
-          WebkitMaskImage:
-            "linear-gradient(180deg, black 0%, transparent 100%)",
-        }}
-        aria-hidden="true"
-      />
-      <div
-        className={cn(fadeClass, "bottom-0")}
-        style={{
-          height: 12,
-          maskImage: "linear-gradient(0deg, black 0%, transparent 100%)",
-          WebkitMaskImage: "linear-gradient(0deg, black 0%, transparent 100%)",
-        }}
-        aria-hidden="true"
-      />
-    </>
   );
 }
