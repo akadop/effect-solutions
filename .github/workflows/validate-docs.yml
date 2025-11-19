@@ -23,25 +23,35 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: '--allowedTools "WebFetch(domain:raw.githubusercontent.com),WebFetch(domain:githubusercontent.com),Bash(gh issue create:*)"'
           prompt: |
-            TASK: Validate documentation files against their source repositories
+            TASK: Validate documentation ACCURACY against source repositories
+
+            FOCUS: Check if documented instructions are INCORRECT or OUTDATED.
+            DO NOT flag missing features - local docs are intentionally simplified.
 
             INSTRUCTIONS:
             1. Read packages/doc-validator/src/validators.config.ts
             2. For EACH validationTarget in the config array:
                a. Read the local doc at {localDocPath}
                b. Fetch source from https://raw.githubusercontent.com/{sourceRepo}/main/{sourcePath}
-               c. Compare local vs source and identify discrepancies
-            3. If ANY discrepancies found, create ONE GitHub issue with ALL findings using `gh issue create`
+               c. Compare ONLY what's documented locally against source
+            3. If inaccuracies found, create ONE GitHub issue with findings using `gh issue create`
 
-            COMPARISON CRITERIA:
-            - Setup/installation instructions changed or outdated
-            - CLI commands, flags, or paths differ
-            - Missing new features or best practices from source
-            - Version requirements changed
+            CHECK FOR (HIGH severity):
+            - Installation commands that no longer work or use wrong package names
+            - CLI commands with incorrect syntax, wrong flags, or deprecated usage
+            - Configuration that's structurally wrong or uses removed options
+            - File paths or URLs that changed
+            - Instructions that contradict current source behavior
 
-            ISSUE FORMAT (if discrepancies found):
-            Title: "Documentation Drift Detected - [date]"
-            Body: Markdown with sections per validation target, listing specific discrepancies with severity (high/medium/low)
+            IGNORE (these are NOT issues):
+            - Local docs being shorter/simpler than source
+            - Missing features, commands, or options not mentioned locally
+            - Lack of comprehensive configuration coverage
+            - Source having more detail than local
+
+            ISSUE FORMAT (if inaccuracies found):
+            Title: "Documentation Accuracy Issues - [date]"
+            Body: Markdown listing ONLY incorrect/outdated information with severity
             Labels: documentation,automated
 
-            If everything is up-to-date, just output "✓ All documentation validated - no issues found"
+            If everything documented is accurate, output "✓ All documentation accurate"

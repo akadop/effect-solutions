@@ -18,7 +18,7 @@ interface TaskButtonProps {
   isDeath: boolean;
   canReset: boolean;
   isOptionPressed: boolean;
-  exampleId?: string;
+  exampleId: string | undefined;
   showCheckmark: boolean;
   isHovered: boolean;
   isPressed: boolean;

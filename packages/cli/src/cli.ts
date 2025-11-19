@@ -10,6 +10,9 @@ import {
   SKILL_DOCUMENT,
 } from "./reference-manifest";
 
+const CLI_NAME = "effect-solutions";
+const CLI_VERSION = "0.1.0";
+
 const installSkill = (global: boolean) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
@@ -56,15 +59,15 @@ const installCommand = Command.make("install", { global: globalOption }).pipe(
   Command.withDescription("Install the Effect Best Practices skill"),
 );
 
-export const cli = Command.make("effect-best-practices").pipe(
+export const cli = Command.make(CLI_NAME).pipe(
   Command.withSubcommands([installCommand]),
   Command.withDescription("Effect Best Practices CLI"),
 );
 
 export const runCli = (argv: ReadonlyArray<string>) =>
   Command.run(cli, {
-    name: "effect-best-practices",
-    version: "0.1.0",
+    name: CLI_NAME,
+    version: CLI_VERSION,
   })(argv);
 
 if (import.meta.main) {

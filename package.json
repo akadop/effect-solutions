@@ -12,6 +12,9 @@
     "build": "bun --filter '*' build",
     "build:website": "bun --cwd packages/website build",
     "build:cli": "bun --cwd packages/cli build",
+    "publish:cli": "cd packages/cli && bun publish",
+    "publish:cli:dry": "cd packages/cli && bun publish --dry-run",
+    "publish:cli:alpha": "cd packages/cli && bun publish --tag alpha",
     "lint": "biome check .",
     "format": "biome format . --write",
     "validate-docs": "typescript-docs-verifier --input-files packages/website/references/*.md --project tsconfig.docs.json"

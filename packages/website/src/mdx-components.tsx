@@ -112,7 +112,7 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
     p: ({ children, className, ...props }) => (
       <p
         className={cn(
-          "text-[1.05rem] leading-relaxed text-neutral-300 mx-6",
+          "text-[1.05rem] leading-relaxed text-neutral-300 mx-6 mt-6",
           className,
         )}
         {...props}
@@ -134,7 +134,7 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
     ol: ({ children, className, ...props }) => (
       <ol
         className={cn(
-          "space-y-3 text-[1.05rem] text-neutral-300 mx-6 list-decimal list-inside",
+          "space-y-3 text-[1.05rem] text-neutral-300 mx-6 list-decimal list-inside mt-6",
           className,
         )}
         {...props}
@@ -163,11 +163,7 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
         return (
           <Link href={href} className={linkClassName} {...props}>
             {children}
-            <ArrowRight
-              size={16}
-              weight="bold"
-              className={iconClassName}
-            />
+            <ArrowRight size={16} weight="bold" className={iconClassName} />
           </Link>
         );
       }
@@ -181,11 +177,7 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
         >
           {children}
           {isExternal && (
-            <ArrowSquareOut
-              size={16}
-              weight="bold"
-              className={iconClassName}
-            />
+            <ArrowSquareOut size={16} weight="bold" className={iconClassName} />
           )}
         </a>
       );

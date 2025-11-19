@@ -1,14 +1,14 @@
 {
-  "name": "@effect-solutions/effect-best-practices",
+  "name": "effect-solutions",
   "version": "0.1.0",
   "description": "CLI installer for Effect TypeScript best practices skill",
   "type": "module",
   "bin": {
-    "effect-best-practices": "./dist/effect-best-practices"
+    "effect-solutions": "./dist/effect-solutions"
   },
   "scripts": {
     "build": "bun build src/cli.ts --outdir dist --target bun",
-    "build:exe": "bun build src/cli.ts --compile --outfile dist/effect-best-practices",
+    "build:exe": "bun build src/cli.ts --compile --outfile dist/effect-solutions",
     "prepublishOnly": "rm -rf dist && bun run build && bun run build:exe",
     "dev": "bun src/cli.ts",
     "prepare": "[ -n \"$CI\" ] || effect-language-service patch"
