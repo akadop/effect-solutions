@@ -59,7 +59,7 @@
     },
     "packages/website": {
       "name": "@effect-best-practices/website",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@effect-atom/atom-react": "^0.4.0",
         "@number-flow/react": "^0.5.10",
