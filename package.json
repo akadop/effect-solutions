@@ -17,7 +17,7 @@
     "publish:cli:alpha": "cd packages/cli && bun publish --tag alpha",
     "lint": "biome check .",
     "format": "biome format . --write",
-    "typecheck": "bunx tsc --noEmit",
+    "typecheck": "bunx tsc --build --force",
     "check": "bun run lint && bun run typecheck",
     "validate-docs": "typescript-docs-verifier --input-files packages/website/references/*.md --project tsconfig.docs.json"
   },
