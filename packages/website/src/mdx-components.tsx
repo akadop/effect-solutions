@@ -8,6 +8,7 @@ import {
 import { codeToHtml } from "shiki";
 import { AsteriskIcon, Sparkle } from "@phosphor-icons/react/dist/ssr";
 import { CalloutAlignedHtml } from "@/components/mdx/CalloutAlignedHtml";
+import { CodeCopyButton } from "@/components/mdx/CodeCopyButton";
 import { DraftNote } from "@/components/mdx/DraftNote";
 import { FootnoteDefinitions } from "@/components/mdx/FootnoteDefinitions";
 import { FootnoteReference } from "@/components/mdx/FootnoteReference";
@@ -40,9 +41,10 @@ async function CodeBlock({
   }
 
   const language = className.replace("language-", "");
+  const trimmed = children.trim();
 
   try {
-    const html = await codeToHtml(children.trim(), {
+    const html = await codeToHtml(trimmed, {
       lang: language,
       theme: "github-dark-default",
       transformers: [transformerAnnotations()],
@@ -52,15 +54,21 @@ async function CodeBlock({
       .replace(/\s*tabindex="[^"]*"/gi, "");
 
     return (
-      <div className="not-prose my-6 overflow-x-auto bg-neutral-950 border-y border-neutral-800">
-        <CalloutAlignedHtml html={sanitizedHtml} />
+      <div className="not-prose group relative my-6 border-y border-neutral-800 bg-neutral-950">
+        <CodeCopyButton value={trimmed} />
+        <div className="overflow-x-auto">
+          <CalloutAlignedHtml html={sanitizedHtml} />
+        </div>
       </div>
     );
   } catch {
     return (
-      <pre className="my-6 overflow-x-auto border border-neutral-800 p-6 font-mono text-foreground">
-        <code>{children}</code>
-      </pre>
+      <div className="not-prose group relative my-6 border border-neutral-800 bg-neutral-950">
+        <CodeCopyButton value={trimmed} />
+        <pre className="overflow-x-auto p-6 font-mono text-foreground">
+          <code>{trimmed}</code>
+        </pre>
+      </div>
     );
   }
 }

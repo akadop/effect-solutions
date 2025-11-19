@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { codeToHtml } from "shiki";
 import { transformerAnnotations } from "@/lib/shiki-transformer-annotations";
 import { CalloutAlignedHtml } from "./CalloutAlignedHtml";
+import { CodeCopyButton } from "./CodeCopyButton";
 
 interface CodeBlockProps {
   code: string;
@@ -17,10 +18,11 @@ export function CodeBlock({
   className,
 }: CodeBlockProps) {
   const [html, setHtml] = useState<string>("");
+  const normalizedCode = useMemo(() => code.trim(), [code]);
 
   useEffect(() => {
     async function highlight() {
-      const result = await codeToHtml(code.trim(), {
+      const result = await codeToHtml(normalizedCode, {
         lang: language,
         theme: "github-dark-default",
         transformers: [transformerAnnotations()],
@@ -31,19 +33,29 @@ export function CodeBlock({
       setHtml(sanitizedHtml);
     }
     highlight();
-  }, [code, language]);
+  }, [language, normalizedCode]);
 
   if (!html) {
     return (
-      <pre>
-        <code>{code}</code>
-      </pre>
+      <div
+        className={`group relative not-prose my-6 border border-neutral-800 bg-neutral-950 ${className || ""}`}
+      >
+        <CodeCopyButton value={normalizedCode} />
+        <pre className="overflow-x-auto px-6 py-4 text-sm text-foreground/90">
+          <code>{normalizedCode}</code>
+        </pre>
+      </div>
     );
   }
 
   return (
-    <div className={`overflow-x-auto ${className || ""}`}>
-      <CalloutAlignedHtml html={html} />
+    <div
+      className={`group relative not-prose my-6 border-y border-neutral-800 bg-neutral-950 ${className || ""}`}
+    >
+      <CodeCopyButton value={normalizedCode} />
+      <div className="overflow-x-auto">
+        <CalloutAlignedHtml html={html} />
+      </div>
     </div>
   );
 }

@@ -51,18 +51,51 @@ const DocsTemplate = McpServer.resource`effect-docs://${docSlugParam}`({
 const SearchTool = Tool.make("search_effect_solutions", {
   description: "Search Effect Solutions documentation by query string. Returns matching docs with relevance scoring.",
   parameters: {
-    query: Schema.String,
+    query: Schema.String.annotations({
+      description: "Search query to find relevant Effect documentation topics",
+    }),
   },
   success: Schema.Struct({
     results: Schema.Array(
       Schema.Struct({
-        slug: Schema.String,
-        title: Schema.String,
-        description: Schema.String,
-        excerpt: Schema.String,
-        score: Schema.Number,
+        slug: Schema.String.annotations({
+          description: "Unique identifier for the documentation topic",
+        }),
+        title: Schema.String.annotations({
+          description: "Title of the documentation topic",
+        }),
+        description: Schema.String.annotations({
+          description: "Brief description of what the topic covers",
+        }),
+        excerpt: Schema.String.annotations({
+          description: "Text excerpt containing the search query",
+        }),
+        score: Schema.Number.annotations({
+          description: "Relevance score (higher is more relevant)",
+        }),
       })
-    ),
+    ).annotations({
+      description: "List of matching documentation topics, sorted by relevance",
+    }),
+  }),
+});
+
+// Open GitHub issue tool
+const OpenIssueTool = Tool.make("open_issue", {
+  description: "Open a GitHub issue to request new documentation, ask questions not covered by current guides, or suggest topics. Returns a pre-filled issue URL.",
+  parameters: {
+    title: Schema.String.annotations({
+      description: "Brief title for the issue (e.g., 'How to handle errors in services')",
+    }),
+    description: Schema.String.annotations({
+      description: "Detailed description of the topic, question, or documentation request",
+    }),
+  },
+  success: Schema.Struct({
+    issueUrl: Schema.String.annotations({
+      description: "GitHub issue URL with pre-filled content",
+    }),
+    message: Schema.String,
   }),
 });
 
@@ -120,10 +153,27 @@ const searchDocs = ({ query }: { query: string }) =>
     return { results };
   });
 
-const toolkit = Toolkit.make(SearchTool);
+const openIssue = ({ title, description }: { title: string; description: string }) =>
+  Effect.sync(() => {
+    const repoUrl = "https://github.com/kitlangton/effect-solutions";
+    const body = `## Description\n\n${description}\n\n---\n*Created via Effect Solutions MCP*`;
+
+    const issueUrl = `${repoUrl}/issues/new?${new URLSearchParams({
+      title,
+      body,
+    }).toString()}`;
+
+    return {
+      issueUrl,
+      message: `GitHub issue URL created. Open this URL to submit: ${issueUrl}`,
+    };
+  });
+
+const toolkit = Toolkit.make(SearchTool, OpenIssueTool);
 
 const toolkitLayer = toolkit.toLayer({
   search_effect_solutions: searchDocs,
+  open_issue: openIssue,
 });
 
 const serverLayer = Layer.mergeAll(

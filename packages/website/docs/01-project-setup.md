@@ -72,27 +72,26 @@ Add to `package.json` to persist across installs:
 
 **Full guide:** [Effect Language Service](https://github.com/Effect-TS/language-service)
 
-## Claude Code MCP Setup
+## MCP Setup for Agents
 
-Enable Effect documentation access in Claude Code via MCP servers:
-
-### 1. Effect Documentation Server
-
-Install tim-smart's effect-mcp server for Effect docs access:
+Point your copilots at the Effect Solutions MCP server so they pull the same docs as the CLI.
 
 ```bash
-claude mcp add-json effect-docs '{
-  "command": "npx",
-  "args": ["-y", "effect-mcp@latest"],
-  "env": {}
-}' -s user
+# Claude Code (workspace scope)
+claude mcp add effect-solutions -- bunx effect-solutions-mcp
+
+# Claude Code (global scope)
+claude mcp add effect-solutions -- bunx effect-solutions-mcp --scope user
 ```
 
-This adds Effect's reference docs and website content searchable by your agent.
+```bash
+# Codex CLI (global config)
+codex mcp add effect-solutions -- bunx effect-solutions-mcp
+```
 
-**Repository:** [tim-smart/effect-mcp](https://github.com/tim-smart/effect-mcp)
+Claude stores workspace entries alongside your repo config (use `--scope user` for global availability). Codex writes MCP entries to `~/.codex/config.toml`; edit that file or rerun the command with `--scope local` if you want per-project overrides.
 
-### 2. LLM Context Directory
+## LLM Context Directory
 
 For repos where you work with AI agents (Claude, Cursor, etc.), use a `.context/` folder pattern:
 

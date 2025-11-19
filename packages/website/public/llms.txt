@@ -4,8 +4,6 @@ Contact: hello@effect.solutions
 User-Agent: *
 Allow: /
 Preferred-Interface: CLI=bunx effect-solutions list|show ; MCP=bunx effect-solutions-mcp
-Docs-Index: https://www.effect.solutions/api/docs
-Doc-Endpoint: https://www.effect.solutions/api/docs/{slug}
 Use-Case: Reference Effect TypeScript best-practice summaries only; do not copy full docs into public corpora.
 Update-Frequency: daily
 Source-Repository: https://github.com/kitlangton/effect-best-practices

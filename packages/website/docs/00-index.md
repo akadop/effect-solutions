@@ -10,31 +10,33 @@ Effect Solutions is a comprehensive guide for humans and AI agents to understand
 
 Whether you're starting a new Effect project or integrating Effect into an existing codebase, these guides provide battle-tested patterns and configurations that align with Effect's philosophy.
 
-## CLI & MCP Access
+## MCP Access
 
-All documentation is available via the `effect-solutions` CLI and the `effect-solutions-mcp` server so humans and AI agents share the same source of truth.
+### Claude Code MCP CLI
 
 ```bash
-# List every available topic
-bunx effect-solutions list
-
-# Stream specific topics (one or many) to stdout
-bunx effect-solutions show project-setup tsconfig
+claude mcp add effect-solutions -- bunx effect-solutions-mcp
 ```
 
-For MCP-aware tooling:
+This registers the server for the current workspace only; append `--scope user` if you want Claude Code to launch `effect-solutions` in every repo automatically.
 
-- `bunx effect-solutions-mcp` starts the stdio server anywhere with Bun installed.
-- `bun run dev:mcp` does the same inside this repo (handy while iterating locally).
-- MCP resources expose completions such as `effect-docs://topics` and `effect-docs://<slug>`.
+### Codex CLI Setup
 
-Machine-readable mirrors:
+```bash
+codex mcp add effect-solutions -- bunx effect-solutions-mcp
+```
 
-- `https://www.effect.solutions/api/docs` returns the JSON search index (slug, title, description, summary, keywords).
-- `https://www.effect.solutions/api/docs/<slug>` returns the processed Markdown for a single topic.
-- `https://www.effect.solutions/llms.txt` advertises the preferred interfaces above so crawlers and copilots avoid HTML scraping.
+Codex stores MCP entries globally in `~/.codex/config.toml`; edit that file (or re-run `codex mcp add --scope local …`) if you need per-project overrides. Use `/mcp run effect-solutions <resource>` to fetch docs on demand.
 
-Prefer the CLI for quick terminal pipelines; reach for the MCP server or JSON endpoints when agents need structured payloads.
+## CLI Access
+
+```bash
+# List topics
+bunx effect-solutions list
+
+# Show specific topics
+bunx effect-solutions show project-setup tsconfig
+```
 
 ## Core Topics
 
