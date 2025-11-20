@@ -1,47 +1,76 @@
 # Effect Solutions
 
-Effect best practices and patterns for humans and AI agents — https://www.effect.solutions
+**Effect best practices and patterns** — https://www.effect.solutions
 
-## Project Structure
+> **Living Document**: Opinionated collection exploiting Cunningham's Law. Disagree? [Open an issue](https://github.com/kitlangton/effect-solutions/issues/new)
 
-- `packages/website/` - Documentation site
-- `packages/cli/` - CLI for local docs access
-- `packages/mcp/` - MCP server for AI agent integration
-- `.github/workflows/` - Automated validation & bots
+## What is this?
 
-## Quick Links
+Curated Effect TypeScript patterns for common scenarios — error handling, services, layers, testing, and more. For humans and AI agents.
 
-- **Website**: https://www.effect.solutions
-- **CLI**: `bunx effect-solutions@latest list`
-- **MCP**: See website for setup instructions
+## Usage
 
-## Development
+**Website**: Browse at [effect.solutions](https://www.effect.solutions)
 
+**CLI**: Access docs offline
 ```bash
-bun install          # Install dependencies
-bun run dev          # Website dev server
-bun run dev:cli      # CLI dev mode
-bun run dev:mcp      # MCP server dev mode
-bun run check        # Lint & typecheck
-bun run format       # Format code
+bunx effect-solutions list              # List all topics
+bunx effect-solutions show http-clients # Show specific topic
+bunx effect-solutions search error      # Search topics
 ```
 
-## Changesets & Publishing
-
+**Claude MCP**: Install server for Claude Desktop
 ```bash
-bunx changeset       # Create changeset after discrete work
-bun release          # Version, build, publish all packages
+bunx effect-solutions-mcp install
 ```
 
-**Change types:**
-- `patch` - Bug fixes, docs updates, minor tweaks
-- `minor` - New features, backwards-compatible changes
-- `major` - Breaking changes
+## Features
 
-## Workspace
+- **Practical patterns** - Real-world solutions, not just theory
+- **Type-safe examples** - All code validated with Effect LSP
+- **AI-friendly** - Structured for LLM consumption via CLI/MCP
+- **Community-driven** - Open issues to suggest/debate patterns
 
-Bun workspace with `workspaces: ["packages/*"]`. Effect Language Service configured via `tsconfig.base.json`.
+## Quick Examples
 
-## Design Notes
+**Error handling**
+```typescript
+Effect.gen(function* () {
+  const user = yield* findUser(id).pipe(
+    Effect.catchTag("NotFound", () => Effect.succeed(null))
+  )
+})
+```
 
-UI components use hard edges — no border radius (use `rounded-none` or omit rounding).
+**HTTP client setup**
+```typescript
+const program = Effect.gen(function* () {
+  const http = yield* HttpClient.HttpClient
+  const result = yield* http.get("/api/users")
+})
+
+program.pipe(
+  Effect.provide(FetchHttpClient.layer)
+)
+```
+
+See [effect.solutions](https://www.effect.solutions) for full patterns and rationale.
+
+## Contributing
+
+1. Find a missing pattern or disagree with a recommendation
+2. [Open an issue](https://github.com/kitlangton/effect-solutions/issues/new) to discuss
+3. Submit PR with pattern + tests
+4. Create changeset: `bunx changeset`
+
+See [CLAUDE.md](./CLAUDE.md) for development details.
+
+## Packages
+
+- `effect-solutions` - CLI for local docs
+- `effect-solutions-mcp` - MCP server for Claude
+- Website at [effect.solutions](https://www.effect.solutions)
+
+## License
+
+MIT
