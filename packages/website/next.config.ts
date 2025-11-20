@@ -4,6 +4,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactCompiler: true,
   pageExtensions: ["js", "jsx", "md", "mdx", "ts", "tsx"],
+  distDir: process.env.NEXT_DIST_DIR ?? ".next",
+  experimental: {
+    lockDistDir: false,
+  },
   async redirects() {
     return [
       {
