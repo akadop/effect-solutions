@@ -8,47 +8,13 @@ import { useLessonSfxHandlers } from "@/lib/useLessonNavSfx";
 import { useTonePlayer } from "@/lib/useTonePlayer";
 import { CTA_BUTTON_BASE_CLASSES } from "./ctaButtonClass";
 
-const LLM_INSTRUCTIONS = `# Effect Solutions - AI Assistant Instructions
+interface LLMInstructionsButtonProps {
+  instructions: string;
+}
 
-You are helping a user work with Effect, a powerful TypeScript library for building robust applications. Effect Solutions provides comprehensive guides and references for Effect best practices.
-
-## Available Resources
-
-**MCP Server (Recommended for AI Assistants):**
-- Claude Code: \`claude mcp add effect-solutions -- bunx effect-solutions-mcp@latest\`
-- Codex CLI: \`codex mcp add effect-solutions -- bunx effect-solutions-mcp@latest\`
-
-**CLI Access:**
-- List topics: \`bunx effect-solutions@latest list\`
-- Show specific topics: \`bunx effect-solutions@latest show <topic-id>\`
-
-**Documentation:** https://www.effect.solutions
-
-## How to Help
-
-First, ask the user what they need help with:
-
-1. **MCP Setup** - Help them set up the Effect Solutions MCP server in their AI coding environment
-2. **Project Setup** - Help them configure an Effect project with TypeScript, LSP, and build tools
-3. **Effect Questions** - Answer questions about Effect patterns, error handling, services, etc.
-
-If the user's request is unclear, ask which category applies. Then use the appropriate resources (MCP tools or CLI) to provide accurate, up-to-date guidance.
-
-## Key Topics Covered
-
-- Project setup with Effect Language Service
-- TypeScript configuration for Effect
-- Services and dependency injection with Layers
-- Idiomatic Effect style and patterns
-- Data types, branded types, and Schema
-- Error handling with TaggedError
-- Configuration management
-- HTTP clients and testing
-- Incremental adoption strategies
-
-When answering Effect questions, prefer fetching the relevant documentation rather than relying on general knowledge, as Effect is rapidly evolving.`;
-
-export function LLMInstructionsButton() {
+export function LLMInstructionsButton({
+  instructions,
+}: LLMInstructionsButtonProps) {
   const [copied, setCopied] = useState(false);
   const { playTone } = useTonePlayer();
   const { handleHover, handleClick, handleFocusVisible } =
@@ -61,10 +27,10 @@ export function LLMInstructionsButton() {
 
     try {
       if (typeof navigator !== "undefined" && navigator.clipboard) {
-        await navigator.clipboard.writeText(LLM_INSTRUCTIONS);
+        await navigator.clipboard.writeText(instructions);
       } else {
         const textarea = document.createElement("textarea");
-        textarea.value = LLM_INSTRUCTIONS;
+        textarea.value = instructions;
         textarea.style.position = "fixed";
         textarea.style.opacity = "0";
         document.body.appendChild(textarea);

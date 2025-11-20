@@ -34,27 +34,34 @@ export function CodeCopyButton({ value, className }: CodeCopyButtonProps) {
     const parent = button.closest(".group");
     if (!parent) return;
 
-    const handleMouseEnter = () => {
+    const handleParentMouseEnter = () => {
       setIsVisible(true);
-      if (!hovered) {
-        playTone({ frequency: 520, duration: 0.06, volume: 0.035 });
-        setHovered(true);
-      }
     };
 
-    const handleMouseLeave = () => {
+    const handleParentMouseLeave = () => {
       setIsVisible(false);
       setHovered(false);
     };
 
-    parent.addEventListener("mouseenter", handleMouseEnter);
-    parent.addEventListener("mouseleave", handleMouseLeave);
+    parent.addEventListener("mouseenter", handleParentMouseEnter);
+    parent.addEventListener("mouseleave", handleParentMouseLeave);
 
     return () => {
-      parent.removeEventListener("mouseenter", handleMouseEnter);
-      parent.removeEventListener("mouseleave", handleMouseLeave);
+      parent.removeEventListener("mouseenter", handleParentMouseEnter);
+      parent.removeEventListener("mouseleave", handleParentMouseLeave);
     };
-  }, [hovered, playTone]);
+  }, []);
+
+  const handleButtonMouseEnter = () => {
+    if (!hovered) {
+      playTone({ frequency: 520, duration: 0.06, volume: 0.035 });
+      setHovered(true);
+    }
+  };
+
+  const handleButtonMouseLeave = () => {
+    setHovered(false);
+  };
 
   async function handleCopy(event?: MouseEvent<HTMLButtonElement>) {
     event?.preventDefault();
@@ -96,6 +103,8 @@ export function CodeCopyButton({ value, className }: CodeCopyButtonProps) {
       )}
       aria-label="Copy code snippet"
       onClick={handleCopy}
+      onMouseEnter={handleButtonMouseEnter}
+      onMouseLeave={handleButtonMouseLeave}
       initial={{ opacity: 0 }}
       animate={{
         opacity: isVisible ? 1 : 0,
