@@ -33,7 +33,7 @@
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-visually-hidden": "^1.2.4",
     "cmdk": "^1.1.1",
-    "effect": "^3.19.4",
+    "effect": "^3.19.5",
     "next-mdx-remote": "^5.0.0"
   },
   "devDependencies": {

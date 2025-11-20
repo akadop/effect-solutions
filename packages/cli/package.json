@@ -25,8 +25,8 @@
   "dependencies": {
     "@effect/cli": "^0.72.1",
     "@effect/platform": "^0.93.3",
-    "@effect/platform-bun": "^0.83.0",
-    "effect": "^3.19.4",
+    "@effect/platform-bun": "^0.84.0",
+    "effect": "^3.19.5",
     "gray-matter": "^4.0.3",
     "picocolors": "^1.1.1"
   },

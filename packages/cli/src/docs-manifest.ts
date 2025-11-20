@@ -1,7 +1,7 @@
 import matter from "gray-matter";
 
 // Import website docs
-import DOC__00_INDEX from "../../website/docs/00-index.md" with {
+import DOC__00_OVERVIEW from "../../website/docs/00-overview.md" with {
   type: "text",
 };
 import DOC__01_PROJECT_SETUP from "../../website/docs/01-project-setup.md" with {
@@ -55,7 +55,7 @@ type RawDoc = {
 };
 
 const RAW_DOCS: ReadonlyArray<RawDoc> = [
-  { filename: "00-index.md", source: DOC__00_INDEX },
+  { filename: "00-overview.md", source: DOC__00_OVERVIEW },
   { filename: "01-project-setup.md", source: DOC__01_PROJECT_SETUP },
   { filename: "02-tsconfig.md", source: DOC__02_TSCONFIG },
   { filename: "03-services-and-layers.md", source: DOC__03_SERVICES_LAYERS },
