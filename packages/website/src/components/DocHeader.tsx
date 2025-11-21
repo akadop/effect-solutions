@@ -53,18 +53,15 @@ export function DocHeader({ docTitles }: DocHeaderProps) {
   } = useLessonSfxHandlers();
   const { isMuted, toggleMute } = useSoundSettings();
 
-  const updateHoverState = useCallback(
-    (nextHovered: boolean) => {
-      setIsHovered((previous) => {
-        if (previous === nextHovered) {
-          return previous;
-        }
-        setHoverAnimationId((id) => id + 1);
-        return nextHovered;
-      });
-    },
-    [setHoverAnimationId, setIsHovered],
-  );
+  const updateHoverState = useCallback((nextHovered: boolean) => {
+    setIsHovered((previous) => {
+      if (previous === nextHovered) {
+        return previous;
+      }
+      setHoverAnimationId((id) => id + 1);
+      return nextHovered;
+    });
+  }, []);
 
   const handleMouseEnter = useCallback(() => {
     updateHoverState(true);
@@ -115,7 +112,15 @@ export function DocHeader({ docTitles }: DocHeaderProps) {
   }-${hoverAnimationId}`;
 
   return (
-    <header className="border-b border-neutral-800 h-16">
+    <header className="relative h-16 lg:sticky lg:top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:backdrop-blur bottom-0 border-b border-neutral-800">
+      {/* <div
+        className="absolute bottom-0 border-b border-neutral-800"
+        style={{
+          left: "calc(-50vw + 50%)",
+          right: "calc(-50vw + 50%)",
+          width: "100vw",
+        }}
+      /> */}
       <div className="max-w-screen-md mx-auto border-x border-neutral-800 flex items-center justify-between h-full">
         <Link
           href="/"

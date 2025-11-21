@@ -27,6 +27,11 @@ interface FootnoteContextValue {
   registerDefinition: (id: string, content: string) => void;
   resetDefinitions: () => void;
   registerAside: (config: RegisterAsidePayload) => void;
+  /**
+   * The article element used for positioning footnotes and other margin content.
+   * Exposed so other client components (e.g. table of contents) can read headings.
+   */
+  article: HTMLElement | null;
   notes: MarginNote[];
 }
 
@@ -49,6 +54,7 @@ interface RegisterAsidePayload {
 
 export function FootnoteProvider({ children }: { children: ReactNode }) {
   const [notes, setNotes] = useState<MarginNote[]>([]);
+  const [, setArticleVersion] = useState(0);
   const referencesRef = useRef<Map<string, HTMLElement>>(new Map());
   const definitionsRef = useRef<Map<string, string>>(new Map());
   const asidesRef = useRef<Map<string, AsideEntry>>(new Map());
@@ -124,6 +130,7 @@ export function FootnoteProvider({ children }: { children: ReactNode }) {
       }
 
       articleRef.current = element;
+      setArticleVersion((version) => version + 1);
 
       if (element && typeof ResizeObserver !== "undefined") {
         resizeObserverRef.current = new ResizeObserver(() => {
@@ -222,6 +229,7 @@ export function FootnoteProvider({ children }: { children: ReactNode }) {
         registerDefinition,
         resetDefinitions,
         registerAside,
+        article: articleRef.current,
         notes,
       }}
     >

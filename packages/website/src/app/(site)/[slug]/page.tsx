@@ -3,15 +3,13 @@ import { notFound } from "next/navigation";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import remarkGfm from "remark-gfm";
 import { FootnoteSidebar } from "@/components/FootnoteSidebar";
+import { DocTocSidebar } from "@/components/DocTocSidebar";
 import { FootnoteArticleShell } from "@/components/mdx/FootnoteArticleShell";
 import { dimensions } from "@/constants/dimensions";
 import { SITE_DEPLOYMENT_URL } from "@/constants/urls";
 import { FootnoteProvider } from "@/lib/footnote-context";
-import {
-  getAllDocSlugs,
-  getDocBySlug,
-  normalizeDocSlug,
-} from "@/lib/mdx";
+import { remarkHeadingIds } from "@/lib/remark-heading-ids";
+import { getAllDocSlugs, getDocBySlug, normalizeDocSlug } from "@/lib/mdx";
 import { generateLLMInstructions } from "@/lib/llm-instructions";
 import { useMDXComponents } from "@/mdx-components";
 
@@ -81,31 +79,38 @@ export default async function DocPage({ params }: DocPageProps) {
   const components = useMDXComponents({ instructions });
 
   return (
-    <main className="mx-auto max-w-screen-md border-x border-neutral-800 flex-1 w-full min-h-[calc(100vh-8rem)]">
-      <FootnoteProvider>
-        <div className="relative">
-          <FootnoteArticleShell>
-            <article className="prose prose-lg prose-invert max-w-none py-6">
-              <MDXRemote
-                source={doc.content}
-                components={components}
-                options={{
-                  mdxOptions: {
-                    remarkPlugins: [remarkGfm],
-                  },
-                }}
-              />
-            </article>
-          </FootnoteArticleShell>
+    <FootnoteProvider>
+      <div className="relative flex justify-center w-full">
+        <DocTocSidebar
+          className="fixed left-0 top-16 w-64 z-30"
+          title={doc.title}
+        />
 
-          <FootnoteSidebar
-            className="absolute top-0 w-80 max-w-xs ml-6"
-            style={{
-              left: `calc(50% + ${dimensions.article.maxWidth} / 2 + ${dimensions.article.sidebarGap})`,
-            }}
-          />
-        </div>
-      </FootnoteProvider>
-    </main>
+        <main className="mx-auto max-w-screen-md border-x border-neutral-800 flex-1 w-full min-h-[calc(100vh-8rem)]">
+          <div className="relative">
+            <FootnoteArticleShell>
+              <article className="prose prose-lg prose-invert max-w-none py-6">
+                <MDXRemote
+                  source={doc.content}
+                  components={components}
+                  options={{
+                    mdxOptions: {
+                      remarkPlugins: [remarkGfm, remarkHeadingIds],
+                    },
+                  }}
+                />
+              </article>
+            </FootnoteArticleShell>
+
+            <FootnoteSidebar
+              className="absolute top-0 w-80 max-w-xs ml-6"
+              style={{
+                left: `calc(50% + ${dimensions.article.maxWidth} / 2 + ${dimensions.article.sidebarGap})`,
+              }}
+            />
+          </div>
+        </main>
+      </div>
+    </FootnoteProvider>
   );
 }

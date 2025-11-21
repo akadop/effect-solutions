@@ -20,7 +20,7 @@
     "changeset": "changeset",
     "changeset:empty": "changeset add --empty",
     "version": "changeset version && bun install",
-    "release": "bun run build:cli && bun run build:mcp && changeset publish && git push --follow-tags",
+    "release": "changeset version --commit && changeset tag && git push --follow-tags",
     "test": "bun test",
     "lint": "biome check .",
     "format": "biome format . --write",
@@ -33,7 +33,7 @@
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-visually-hidden": "^1.2.4",
     "cmdk": "^1.1.1",
-    "effect": "^3.19.5",
+    "effect": "^3.19.6",
     "next-mdx-remote": "^5.0.0"
   },
   "devDependencies": {
