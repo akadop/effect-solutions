@@ -16,14 +16,12 @@ export function LLMInstructionsButton({
   instructions,
 }: LLMInstructionsButtonProps) {
   const [copied, setCopied] = useState(false);
+  const { handleHover, handleFocusVisible } = useLessonSfxHandlers();
   const { playTone } = useTonePlayer();
-  const { handleHover, handleClick, handleFocusVisible } =
-    useLessonSfxHandlers();
 
   async function handleCopy(event?: MouseEvent<HTMLButtonElement>) {
     event?.preventDefault();
     event?.stopPropagation();
-    handleClick();
 
     try {
       if (typeof navigator !== "undefined" && navigator.clipboard) {
@@ -40,7 +38,8 @@ export function LLMInstructionsButton({
         document.body.removeChild(textarea);
       }
       setCopied(true);
-      playTone({ frequency: 780, duration: 0.1, volume: 0.05 });
+      playTone({ frequency: 640, duration: 0.09, volume: 0.05, type: "triangle" });
+      playTone({ frequency: 860, duration: 0.08, delay: 0.08, volume: 0.045, type: "triangle" });
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       console.error("Failed to copy instructions", error);
@@ -55,7 +54,7 @@ export function LLMInstructionsButton({
         CTA_BUTTON_BASE_CLASSES,
         copied && "text-emerald-300 border-emerald-400/70 bg-emerald-950/30",
       )}
-      aria-label="Copy LLM instructions"
+      aria-label="Copy Agent Instructions"
       onClick={handleCopy}
       onMouseEnter={handleHover}
       onFocus={handleFocusVisible}
@@ -75,7 +74,7 @@ export function LLMInstructionsButton({
             <Copy size={16} weight="bold" />
           )}
           <span aria-live="polite">
-            {copied ? "Copied to clipboard!" : "Copy LLM Instructions"}
+            {copied ? "Copied to clipboard!" : "Copy Agent Instructions"}
           </span>
         </motion.span>
       </AnimatePresence>

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, type MouseEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Check, Copy } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
+import { useLessonNavSfx } from "@/lib/useLessonNavSfx";
 import { useTonePlayer } from "@/lib/useTonePlayer";
 
 const copyButtonSpring = {
@@ -25,6 +26,7 @@ export function CodeCopyButton({ value, className }: CodeCopyButtonProps) {
   const [hovered, setHovered] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const { playHoverTone } = useLessonNavSfx();
   const { playTone } = useTonePlayer();
 
   useEffect(() => {
@@ -54,7 +56,7 @@ export function CodeCopyButton({ value, className }: CodeCopyButtonProps) {
 
   const handleButtonMouseEnter = () => {
     if (!hovered) {
-      playTone({ frequency: 520, duration: 0.06, volume: 0.035 });
+      playHoverTone();
       setHovered(true);
     }
   };
@@ -84,7 +86,8 @@ export function CodeCopyButton({ value, className }: CodeCopyButtonProps) {
         document.body.removeChild(textarea);
       }
       setCopied(true);
-      playTone({ frequency: 780, duration: 0.1, volume: 0.05 });
+      playTone({ frequency: 640, duration: 0.09, volume: 0.05, type: "triangle" });
+      playTone({ frequency: 860, duration: 0.08, delay: 0.08, volume: 0.045, type: "triangle" });
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       console.error("Failed to copy code", error);

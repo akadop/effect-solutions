@@ -1,12 +1,14 @@
 ---
-title: Effect Style
+title: Core Patterns
 description: "Coding conventions for Effect.fn, Effect.gen, and imports"
 order: 4
 ---
 
-# Effect Style
+# Core Patterns
 
-## Effect.fn for Effectful Functions
+Guidelines for how we structure Effect code: when to name effectful functions with `Effect.fn`, when to drop tracing overhead, how to express sequencing with `Effect.gen`, and the import style we expect across the codebase.
+
+## Effect.fn
 
 Use `Effect.fn` with generator functions for traced, named effects:
 

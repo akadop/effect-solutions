@@ -7,6 +7,8 @@ draft: true
 
 # Incremental Adoption
 
+Strategies for weaving Effect into an existing codebase without big-bang rewrites: start at the boundaries, wrap promise APIs, and migrate services in slices while tests stay green.
+
 ## TODO
 
 - Start small: wrap existing async functions with Effect.tryPromise

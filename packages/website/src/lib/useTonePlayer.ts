@@ -9,6 +9,7 @@ interface ToneOptions {
   frequency?: number;
   type?: OscillatorType;
   volume?: number;
+  force?: boolean;
 }
 
 // Lightweight Web Audio helper for short UI tones.
@@ -45,7 +46,9 @@ export function useTonePlayer() {
 
   const playTone = useCallback(
     (options?: ToneOptions) => {
-      if (isMuted) {
+      const force = options?.force === true;
+
+      if (isMuted && !force) {
         return;
       }
 

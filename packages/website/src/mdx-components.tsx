@@ -102,10 +102,10 @@ export function useMDXComponents(
         {...props}
       >
         <span
-          className="w-full h-6 border-y border-[var(--color-border)] block"
+          className="w-full h-6 border-y border-neutral-800 block"
           style={{
             backgroundImage:
-              "repeating-linear-gradient(-45deg, transparent, transparent 8px, var(--color-border) 8px, var(--color-border) 9px)",
+              "repeating-linear-gradient(-45deg, transparent, transparent 8px, rgb(38, 38, 38) 8px, rgb(38, 38, 38) 9px)",
           }}
         />
         <span className="flex items-center gap-3 px-6">

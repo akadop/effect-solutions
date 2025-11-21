@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { type FocusEvent, useCallback } from "react";
 import { useLessonSfxHandlers } from "@/lib/useLessonNavSfx";
+import { EffectOrFooter } from "./EffectOrFooter";
 
 interface DocListProps {
   docs: Array<{
@@ -13,20 +14,16 @@ interface DocListProps {
   }>;
 }
 
-type DocGroup = "Setup" | "Bread & Butter" | "Drafts";
+type DocGroup = "Setup" | "Core Patterns" | "Drafts";
 
-const GROUP_DISPLAY_ORDER: DocGroup[] = [
-  "Setup",
-  "Bread & Butter",
-  "Drafts",
-];
+const GROUP_DISPLAY_ORDER: DocGroup[] = ["Setup", "Core Patterns", "Drafts"];
 
 const SETUP_SLUGS = new Set(["overview", "project-setup", "tsconfig"]);
 
 function assignGroup(doc: { slug: string; draft?: boolean }): DocGroup {
   if (doc.draft) return "Drafts";
   if (SETUP_SLUGS.has(doc.slug)) return "Setup";
-  return "Bread & Butter";
+  return "Core Patterns";
 }
 
 export function DocList({ docs }: DocListProps) {
@@ -67,7 +64,14 @@ export function DocList({ docs }: DocListProps) {
       {GROUP_DISPLAY_ORDER.filter((group) => grouped[group]?.length).map(
         (group) => (
           <div key={group}>
-            <div className="px-6 pt-6 pb-2 text-xs font-semibold tracking-[0.16em] uppercase text-neutral-500">
+            <div
+              className="w-full h-6 border-b border-neutral-800 block"
+              style={{
+                backgroundImage:
+                  "repeating-linear-gradient(-45deg, transparent, transparent 8px, rgb(38, 38, 38) 8px, rgb(38, 38, 38) 9px)",
+              }}
+            />
+            <div className="px-6 pb-2 pt-2 text-xs font-semibold tracking-[0.16em] uppercase text-neutral-500">
               {group}
             </div>
             <div className="border-t border-neutral-800" />
@@ -110,6 +114,7 @@ export function DocList({ docs }: DocListProps) {
           </div>
         ),
       )}
+      <EffectOrFooter />
     </section>
   );
 }

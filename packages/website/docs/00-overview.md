@@ -8,7 +8,7 @@ order: 0
 
 Effect Solutions is a comprehensive guide for humans and AI agents to understand best practices and patterns when building applications with the Effect library. This resource covers everything from initial project setup through advanced patterns for dependency injection, error handling, and data modeling.
 
-## LLM Agent Quick Start
+## Agent Quick Start
 
 Copy these instructions to share with your AI assistant. They'll explain how to use the CLI and interact with Effect Solutions documentation. Just paste this into any agent session and it should guide you through the rest.
 
@@ -50,7 +50,7 @@ Recommended TypeScript compiler options optimized for Effect development. Includ
 ### [Services & Layers](/services-and-layers)
 Dependency injection patterns using Effect's Context and Layer system. Learn how to define services with `Context.Tag`, implement them with `Layer.succeed` or `Layer.effect`, compose layers, and manage dependencies in a type-safe, testable way.
 
-### [Effect Style](/effect-style)
+### [Core Patterns](/effect-style)
 Writing idiomatic Effect code including pipe-based composition, generator syntax with `Effect.gen`, choosing between `Effect.all` and generators, and when to use `Do` notation. Covers common patterns that make Effect code readable and maintainable.
 
 ### [Data Types](/data-types)
