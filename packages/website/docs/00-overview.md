@@ -41,33 +41,4 @@ Without global install, use `bunx effect-solutions@latest <command>`.
 
 ## Core Topics
 
-### [Project Setup](/project-setup)
-Configure the Effect Language Service for enhanced TypeScript diagnostics and IntelliSense. Covers installation via LSP CLI patch, VSCode settings, and verification steps to ensure your editor provides real-time Effect-specific type checking.
-
-### [TypeScript Config](/tsconfig)
-Recommended TypeScript compiler options optimized for Effect development. Includes strict mode flags, module resolution settings, and Effect-specific configuration that ensures type safety and proper inference across your codebase.
-
-### [Services & Layers](/services-and-layers)
-Dependency injection patterns using Effect's Context and Layer system. Learn how to define services with `Context.Tag`, implement them with `Layer.succeed` or `Layer.effect`, compose layers, and manage dependencies in a type-safe, testable way.
-
-### [Core Patterns](/effect-style)
-Writing idiomatic Effect code including pipe-based composition, generator syntax with `Effect.gen`, choosing between `Effect.all` and generators, and when to use `Do` notation. Covers common patterns that make Effect code readable and maintainable.
-
-### [Data Types](/data-types)
-Branded types for semantic type safety, Schema-based validation and serialization, and generating type-safe unique identifiers. Includes patterns for domain modeling that leverage Effect's ecosystem to prevent invalid states at compile time.
-
-### [Error Handling](/error-handling)
-Structured error handling with `Data.TaggedError`, understanding `Cause` for failure inspection, and pattern matching on errors using `Effect.match`. Covers how to model expected failures in the type system and handle unexpected errors gracefully.
-
-### [Configuration](/config)
-Application configuration using Effect's `Config` module. Learn how to define typed configuration with defaults, validation, and environment variable mapping that integrates seamlessly with your Effect services and layers.
-
-<DraftNote>
-
-### [Project Structure](/project-structure)
-Folder organization patterns for Effect applications
-
-### [Incremental Adoption](/incremental-adoption)
-Gradually introducing Effect to existing codebases
-
-</DraftNote>
+<DocTopicsList />
