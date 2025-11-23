@@ -1,5 +1,15 @@
 # @effect-best-practices/website
 
+## 0.4.2
+
+### Patch Changes
+
+- [`b734ce1`](https://github.com/kitlangton/effect-solutions/commit/b734ce194e262a04931c5f9e674c913f79652a90) Thanks [@kitlangton](https://github.com/kitlangton)! - Add MIT license and contributing guidelines with issue-first workflow
+
+- Improve agent setup instructions: restructure LLM instructions with consolidated confirmation rules and interaction modes, refine quick-start documentation with clearer agent-guided setup framing, and simplify reference repositories guidance
+
+- [`b734ce1`](https://github.com/kitlangton/effect-solutions/commit/b734ce194e262a04931c5f9e674c913f79652a90) Thanks [@kitlangton](https://github.com/kitlangton)! - Standardize code style across documentation examples: remove semicolons, use destructured imports from 'effect', enforce camelCase layer naming, and consistent @app/ tag prefixes
+
 ## 0.4.1
 
 ### Patch Changes

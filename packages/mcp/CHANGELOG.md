@@ -1,5 +1,11 @@
 # effect-solutions-mcp
 
+## 0.3.2
+
+### Patch Changes
+
+- Improve agent setup instructions: restructure LLM instructions with consolidated confirmation rules and interaction modes, refine quick-start documentation with clearer agent-guided setup framing, and simplify reference repositories guidance
+
 ## 0.3.1
 
 ### Patch Changes
