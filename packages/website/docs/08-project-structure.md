@@ -7,7 +7,7 @@ draft: true
 
 # Project Structure
 
-High-level guidance on how to lay out Effect projects—where services, schemas, config, and entrypoints live, and how to keep dependencies flowing in the right direction.
+High-level guidance on how to lay out Effect projects. Where services, schemas, config, and entrypoints live, and how to keep dependencies flowing in the right direction.
 
 ## TODO
 

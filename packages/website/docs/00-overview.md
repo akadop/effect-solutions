@@ -6,19 +6,11 @@ order: 0
 
 # Effect Solutions
 
-Effect Solutions is a comprehensive guide for humans and AI agents to understand best practices and patterns when building applications with the Effect library. This resource covers everything from initial project setup through advanced patterns for dependency injection, error handling, and data modeling.
+This is a field manual for Effect. It is neither exhaustive nor encyclopedic (see the [official docs](https://effect.website) for that). Instead, you will find a set of patterns and "best practices" for writing idiomatic Effect code.
 
-## Agent Quick Start
+We **highly recommended** that you install the `effect-solutions` CLI, such that your agents can quickly access this guide.
 
-Copy these instructions to share with your AI assistant. They'll explain how to use the CLI and interact with Effect Solutions documentation. Just paste this into any agent session and it should guide you through the rest.
-
-<div className="flex justify-center my-8">
-  <LLMInstructionsButton />
-</div>
-
-## CLI Usage
-
-Install globally for easy access everywhere:
+## Quick Start
 
 ```bash
 bun add -g effect-solutions@latest
@@ -38,7 +30,3 @@ effect-solutions show --all
 ```
 
 Without global install, use `bunx effect-solutions@latest <command>`.
-
-## Core Topics
-
-<DocTopicsList />

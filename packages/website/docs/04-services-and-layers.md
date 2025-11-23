@@ -12,7 +12,7 @@ These are best practices to follow when building services and layers.
 
 ## Designing with Services First
 
-Start by sketching the service tags—no implementations—so you can reason about boundaries and dependencies before writing any production code.
+Start by sketching the service tags (no implementations) so you can reason about boundaries and dependencies before writing any production code.
 
 ```typescript
 import { Context, Effect, Layer } from "effect"
@@ -93,15 +93,16 @@ class Database extends Context.Tag("@app/Database")<
   static readonly mockLayer = Layer.sync(Database, () => {
     let records: Record<string, unknown> = {
       "user-1": { id: "user-1", name: "Alice" },
-      "user-2": { id: "user-2", name: "Bob" }
+      "user-2": { id: "user-2", name: "Bob" },
     }
 
     return Database.of({
       query: (sql) => Effect.succeed(Object.values(records)),
-      execute: (sql) => Effect.sync(() => {
-        // Parse and mutate records in-memory
-        console.log(`Mock execute: ${sql}`)
-      })
+      execute: (sql) =>
+        Effect.sync(() => {
+          // Parse and mutate records in-memory
+          console.log(`Mock execute: ${sql}`)
+        }),
     })
   })
 
@@ -113,7 +114,7 @@ class Database extends Context.Tag("@app/Database")<
 
       return Database.of({
         query: (sql) => Effect.tryPromise(() => pool.query(sql)),
-        execute: (sql) => Effect.tryPromise(() => pool.execute(sql))
+        execute: (sql) => Effect.tryPromise(() => pool.execute(sql)),
       })
     })
   )
@@ -132,7 +133,7 @@ class Cache extends Context.Tag("@app/Cache")<
 
     return Cache.of({
       get: (key) => Effect.succeed(store.get(key) ?? null),
-      set: (key, value) => Effect.sync(() => void store.set(key, value))
+      set: (key, value) => Effect.sync(() => void store.set(key, value)),
     })
   })
 
@@ -144,7 +145,7 @@ class Cache extends Context.Tag("@app/Cache")<
 
       return Cache.of({
         get: (key) => Effect.tryPromise(() => redis.get(key)),
-        set: (key, value) => Effect.tryPromise(() => redis.set(key, value))
+        set: (key, value) => Effect.tryPromise(() => redis.set(key, value)),
       })
     })
   )
@@ -152,21 +153,23 @@ class Cache extends Context.Tag("@app/Cache")<
 ```
 
 **Layer naming:**
+
 - All layer properties use camelCase and end with `Layer` suffix
 - Use `layer` for the production implementation
 - Use descriptive names for variants: `testLayer`, `mockLayer`, `localLayer`, etc.
 - Avoid `liveLayer` prefix - just use `layer` for the primary implementation
 
 **When to use each constructor:**
-- `Layer.sync()` - synchronous setup, returns service immediately
-- `Layer.effect()` - async setup or needs to yield from other services
-- `Layer.succeed()` - static service with no setup logic
+
+- `Layer.sync()`: synchronous setup, returns service immediately
+- `Layer.effect()`: async setup or needs to yield from other services
+- `Layer.succeed()`: static service with no setup logic
 
 ## Layer Composition
 
 Put layer implementations as static properties using **camelCase** and `.of()` for clarity.
 
-**Tag identifiers must be unique** - use `@app/ServiceName` prefix pattern to avoid collisions:
+**Tag identifiers must be unique**. Use `@app/ServiceName` prefix pattern to avoid collisions:
 
 ```typescript
 import { Config, Context, Effect, Layer, Redacted } from "effect"
@@ -174,7 +177,11 @@ import { Config, Context, Effect, Layer, Redacted } from "effect"
 // Config service using Config primitives
 class AppConfig extends Context.Tag("@app/AppConfig")<
   AppConfig,
-  { readonly apiUrl: string; readonly timeout: number; readonly token: Redacted.Redacted }
+  {
+    readonly apiUrl: string
+    readonly timeout: number
+    readonly token: Redacted.Redacted
+  }
 >() {
   static readonly layer = Layer.effect(
     AppConfig,
@@ -207,9 +214,9 @@ export class ApiClient extends Context.Tag("@app/ApiClient")<
       const fetch = Effect.fn("ApiClient.fetch")(function* (path: string) {
         const url = `${config.apiUrl}${path}`
         yield* Effect.log(
-          `Fetching ${url} (timeout: ${config.timeout}ms, token: ${Redacted.value(
-            config.token
-          )})`
+          `Fetching ${url} (timeout: ${
+            config.timeout
+          }ms, token: ${Redacted.value(config.token)})`
         )
         return `Response from ${url}`
       })
@@ -220,9 +227,7 @@ export class ApiClient extends Context.Tag("@app/ApiClient")<
 }
 
 // Combine layers
-const mainLayer = ApiClient.layer.pipe(
-  Layer.provide(AppConfig.layer)
-)
+const mainLayer = ApiClient.layer.pipe(Layer.provide(AppConfig.layer))
 
 // Usage
 const program = Effect.gen(function* () {
@@ -235,6 +240,7 @@ const main = program.pipe(Effect.provide(mainLayer))
 ```
 
 **Naming conventions:**
+
 - Tag identifiers: Always use `@app/ServiceName` prefix pattern
 - Layer properties: camelCase with `Layer` suffix (`layer`, `testLayer`, `mockLayer`)
 - Always use `.of()` to make it clear what service you're constructing

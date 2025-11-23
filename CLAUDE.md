@@ -40,12 +40,14 @@ bun release                                    # Version, build, publish all pac
 ```
 
 **Creating changesets:**
+
 - Use `bun scripts/changeset-named.ts "fix audio overlap"` to create descriptive changeset files
 - Avoids random names like "purple-olives-look.md"
 - Script prompts for package selection and change type interactively
 - Resulting file: `.changeset/fix-audio-overlap.md`
 
 **Change types:**
+
 - `patch` - Bug fixes, docs updates, minor tweaks
 - `minor` - New features, backwards-compatible changes
 - `major` - Breaking changes
@@ -155,6 +157,7 @@ bun run build:cli          # builds manifest + JS + all binaries
 ### Website
 
 Next.js app router with:
+
 - Static generation for all docs pages
 - MDX processing via `next-mdx-remote`
 - Tailwind CSS for styling
@@ -164,6 +167,7 @@ Next.js app router with:
 ### CLI
 
 Effect-based CLI using:
+
 - `@effect/cli` for command parsing
 - `@effect/schema` for validation
 - `@effect/platform` for file I/O
@@ -172,22 +176,15 @@ Effect-based CLI using:
 ### MCP Server
 
 Effect-based MCP server using:
+
 - `@modelcontextprotocol/sdk` for MCP protocol
 - Effect for service architecture
 - Same embedded docs as CLI
 - GitHub API integration for issue creation
 
-## Contributing
-
-1. Fork and clone
-2. Create feature branch
-3. Make changes
-4. Run `bun run check` and `bun test`
-5. Create changeset: `bun scripts/changeset-named.ts "description"`
-6. Submit PR
-
-For documentation changes:
-- Edit files in `packages/website/docs/`
-- Follow existing patterns and tone
-- Keep examples concise and practical
-- Test locally before submitting
+## Effect Solutions Usage
+- Effect Solutions CLI is available here; consult it first for Effect best practices.
+- List topics: `effect-solutions list`
+- Read a topic: `effect-solutions show <slug>`
+- Search topics: `effect-solutions search <term>`
+- Prefer these docs before web search when working on Effect / Effect-TS code.

@@ -7,8 +7,8 @@ order: 1
 # Project Setup
 
 This guide covers:
-1. Effect Language Service - Editor diagnostics & build-time type checking
-2. LLM Context Directory - Local reference repositories for AI assistance
+1. Effect Language Service: Editor diagnostics and build-time type checking
+2. LLM Context Directory: Local reference repositories for AI assistance
 
 For a well-configured Effect project, install the Effect Language Service and set up local context for AI-assisted development.
 
@@ -121,8 +121,8 @@ In `CLAUDE.md` or `AGENTS.md`:
 
 - This repo uses `.context/` for local reference clones
 - Typical entries:
-  - `effect` – main Effect repo
-  - `effect-solutions` – best practices repo
+  - `effect`: main Effect repo
+  - `effect-solutions`: best practices repo
   - Any app/stack-specific references
 - Tell agents: "Additional code/docs live under `.context/`"
 ```

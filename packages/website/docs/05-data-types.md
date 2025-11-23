@@ -10,10 +10,10 @@ TypeScript's built-in tools for modeling data are limited. Effect's Schema libra
 
 ## Why Schema?
 
-- **Runtime validation** – parse untyped data (HTTP, CLI, config) safely.
-- **Serialization** – encode rich domain objects to JSON/DTOs with one definition.
-- **Branding** – prevent ID mix-ups without hand-written wrappers.
-- **Tooling** – share types between the CLI and website without duplicating logic.
+- **Runtime validation**: parse untyped data (HTTP, CLI, config) safely.
+- **Serialization**: encode rich domain objects to JSON/DTOs with one definition.
+- **Branding**: prevent ID mix-ups without hand-written wrappers.
+- **Tooling**: share types between the CLI and website without duplicating logic.
 
 ## Schema Classes
 
@@ -111,7 +111,7 @@ isOk(failure) // false
 
 ## Branded Types
 
-Use branded types to prevent mixing values that have the same underlying type. **In a well-designed domain model, nearly all primitives should be branded** - not just IDs, but emails, URLs, timestamps, slugs, counts, percentages, and any value with semantic meaning.
+Use branded types to prevent mixing values that have the same underlying type. **In a well-designed domain model, nearly all primitives should be branded**. Not just IDs, but emails, URLs, timestamps, slugs, counts, percentages, and any value with semantic meaning.
 
 ```typescript
 import { Schema } from "effect"
@@ -145,7 +145,7 @@ const slug = Slug.make("hello-world")
 function getUser(id: UserId) { return id }
 function sendEmail(to: Email) { return to }
 
-// ❌ All of these produce type errors
+// All of these produce type errors
 // getUser(postId) // Can't pass PostId where UserId expected
 // sendEmail(slug) // Can't pass Slug where Email expected
 // const bad: UserId = "raw-string" // Can't assign raw string to branded type
@@ -161,11 +161,11 @@ function sendEmail(to: Email) { return to }
 
 ## Pattern Summary
 
-1. **Composite types** → `Schema.Class` with `.make()`
-2. **Unions** → `Schema.Literal()` for simple enums, `Schema.TaggedClass()` + `Schema.Union()` for complex variants
-3. **IDs** → Branded types with `Schema.brand()`
-4. **Compose** → Use branded IDs inside schema classes
-5. **Never** → Use plain strings for IDs or raw TypeScript types for models
+1. **Composite types**: `Schema.Class` with `.make()`
+2. **Unions**: `Schema.Literal()` for simple enums, `Schema.TaggedClass()` + `Schema.Union()` for complex variants
+3. **IDs**: Branded types with `Schema.brand()`
+4. **Compose**: Use branded IDs inside schema classes
+5. **Never**: Use plain strings for IDs or raw TypeScript types for models
 
 ## JSON Encoding & Decoding
 
