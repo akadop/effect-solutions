@@ -23,8 +23,10 @@ export const isNewer = (latest: string, current: string): boolean => {
   const parseParts = (v: string) =>
     v.split(".").map((x) => Number.parseInt(x, 10) || 0);
 
-  const [latestMajor, latestMinor, latestPatch] = parseParts(latest);
-  const [currentMajor, currentMinor, currentPatch] = parseParts(current);
+  const [latestMajor = 0, latestMinor = 0, latestPatch = 0] =
+    parseParts(latest);
+  const [currentMajor = 0, currentMinor = 0, currentPatch = 0] =
+    parseParts(current);
 
   if (latestMajor !== currentMajor) return latestMajor > currentMajor;
   if (latestMinor !== currentMinor) return latestMinor > currentMinor;

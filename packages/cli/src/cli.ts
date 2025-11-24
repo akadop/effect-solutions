@@ -6,11 +6,7 @@ import { Console, Effect, Option, pipe } from "effect";
 import pc from "picocolors";
 import pkg from "../package.json" with { type: "json" };
 import { DOC_LOOKUP, DOCS } from "./docs-manifest";
-import {
-  type BrowserOpenStrategy,
-  type OpenIssueCategory,
-  openIssue,
-} from "./open-issue-service";
+import { type OpenIssueCategory, openIssue } from "./open-issue-service";
 import { maybeNotifyUpdate } from "./update-notifier";
 
 const CLI_NAME = "effect-solutions";
@@ -135,36 +131,47 @@ const listCommand = Command.make("list").pipe(
 );
 
 const showCommand = Command.make("show", {
-  slugs: Args.text({ name: "slug" }).pipe(Args.atLeast(1)),
+  slugs: Args.text({ name: "slug" }).pipe(
+    Args.withDescription(
+      "Doc slug(s) to display (e.g., error-handling, services)",
+    ),
+    Args.atLeast(1),
+  ),
 }).pipe(
   Command.withDescription("Show one or more Effect Solutions docs"),
   Command.withHandler(({ slugs }) => showDocs(slugs)),
 );
 
 const openIssueCommand = Command.make("open-issue", {
-  category: Options.text("category").pipe(Options.optional),
-  title: Options.text("title").pipe(Options.optional),
-  description: Options.text("description").pipe(Options.optional),
-  strategy: Options.text("strategy").pipe(Options.optional),
+  category: Options.text("category").pipe(
+    Options.withDescription(
+      "Issue category: 'Topic Request', 'Fix', or 'Improvement'",
+    ),
+    Options.optional,
+  ),
+  title: Options.text("title").pipe(
+    Options.withDescription("Brief issue title"),
+    Options.optional,
+  ),
+  description: Options.text("description").pipe(
+    Options.withDescription("Detailed issue description"),
+    Options.optional,
+  ),
 }).pipe(
   Command.withDescription(
     "Open a pre-filled GitHub issue in the effect-solutions repo",
   ),
-  Command.withHandler(({ category, title, description, strategy }) =>
+  Command.withHandler(({ category, title, description }) =>
     Effect.sync(() => {
-      const categoryValue = Option.getOrUndefined(category);
-      const titleValue = Option.getOrUndefined(title);
-      const descriptionValue = Option.getOrUndefined(description);
-      const strategyValue = Option.getOrUndefined(strategy);
+      const input = {
+        ...(Option.isSome(category) && {
+          category: category.value as OpenIssueCategory,
+        }),
+        ...(Option.isSome(title) && { title: title.value }),
+        ...(Option.isSome(description) && { description: description.value }),
+      };
 
-      return openIssue({
-        category: categoryValue as OpenIssueCategory | undefined,
-        title: titleValue,
-        description: descriptionValue,
-        ...(strategyValue
-          ? { strategy: strategyValue as BrowserOpenStrategy }
-          : {}),
-      });
+      return openIssue(input);
     }).pipe(
       Effect.flatMap((result) =>
         Console.log(
