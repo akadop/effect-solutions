@@ -1,5 +1,13 @@
 # @effect-best-practices/website
 
+## 0.4.7
+
+### Patch Changes
+
+- [`0820a79`](https://github.com/kitlangton/effect-solutions/commit/0820a79a79c0452ec48551915d99880c06432ff8) Thanks [@kitlangton](https://github.com/kitlangton)! - Add expected errors vs defects section to error handling doc. Add MDX table styling with edge-to-edge borders.
+
+- [`35e8333`](https://github.com/kitlangton/effect-solutions/commit/35e8333ce485c6d277cb9b192094c950134ee427) Thanks [@kitlangton](https://github.com/kitlangton)! - Overhaul testing-with-vitest doc with worked example, fix heading anchor links
+
 ## 0.4.6
 
 ### Patch Changes
