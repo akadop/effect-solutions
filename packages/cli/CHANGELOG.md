@@ -1,5 +1,11 @@
 # effect-solutions
 
+## 0.3.2
+
+### Patch Changes
+
+- [`321726e`](https://github.com/kitlangton/effect-solutions/commit/321726e26d8875fe1ed35389dddaec74f4bdfa9b) Thanks [@kitlangton](https://github.com/kitlangton)! - Add repository field to packages for npm provenance. Fix semver comparison in update notifier to prevent showing false update notifications when current version is newer than published version.
+
 ## 0.3.1
 
 ### Patch Changes

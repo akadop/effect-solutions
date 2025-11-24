@@ -1,6 +1,6 @@
 {
   "name": "effect-solutions",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Docs + helper CLI for Effect TypeScript best practices",
   "type": "module",
   "bin": {
