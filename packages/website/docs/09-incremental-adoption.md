@@ -24,7 +24,7 @@ async function fetchUser(id: string): Promise<User> {
 const getUser = (id: string) =>
   Effect.tryPromise({
     try: () => fetchUser(id),
-    catch: (error) => new FetchError({ cause: error })
+    catch: (error) => FetchError.make({ error })
   })
 
 // Use in Effect code
@@ -52,7 +52,7 @@ const data = Effect.promise(() => Promise.resolve({ count: 42 }))
 ```typescript
 const user = Effect.tryPromise({
   try: () => fetch("/api/user").then(r => r.json()),
-  catch: (error) => new NetworkError({ cause: error })
+  catch: (error) => NetworkError.make({ error })
 })
 ```
 
@@ -127,7 +127,7 @@ export class Gzip extends Context.Tag("Gzip")<
       Effect.async<void, GzipError>((resume) => {
         gunzip(source, dest, (error) => {
           if (error) {
-            resume(Effect.fail(new GzipError(error)))
+            resume(GzipError.make(error))
           } else {
             resume(Effect.succeed(undefined))
           }
@@ -284,7 +284,7 @@ export class Database extends Context.Tag("Database")<
         query: (sql, params) =>
           Effect.tryPromise({
             try: () => pool.query(sql, params),
-            catch: (error) => new DatabaseError({ cause: error })
+            catch: (error) => DatabaseError.make({ error })
           })
       }
     })

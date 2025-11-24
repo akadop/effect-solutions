@@ -70,6 +70,17 @@ class UserNotFoundError extends Schema.TaggedError<UserNotFoundError>()(
   }
 ) {}
 
+class GenericUsersError extends Schema.TaggedError<GenericUsersError>()(
+  "GenericUsersError",
+  {
+    id: UserId,
+    error: Schema.Defect,
+  }
+) {}
+
+const UsersError = Schema.Union(UserNotFoundError, GenericUsersError)
+type UsersError = typeof UsersError.Type
+
 class Analytics extends Context.Tag("@app/Analytics")<
   Analytics,
   {
@@ -80,7 +91,7 @@ class Analytics extends Context.Tag("@app/Analytics")<
 class Users extends Context.Tag("@app/Users")<
   Users,
   {
-    readonly findById: (id: UserId) => Effect.Effect<User, UserNotFoundError>
+    readonly findById: (id: UserId) => Effect.Effect<User, UsersError>
     readonly all: () => Effect.Effect<readonly User[]>
   }
 >() {
@@ -100,7 +111,7 @@ class Users extends Context.Tag("@app/Users")<
         Effect.catchTag("ResponseError", (error) =>
           error.response.status === 404
             ? UserNotFoundError.make({ id })
-            : Effect.die(error)
+            : GenericUsersError.make({ id, error })
         )
       )
 
@@ -203,7 +214,7 @@ class Events extends Context.Tag("@app/Events")<
           const ticket = yield* tickets.issue(eventId, userId)
           const now = yield* Clock.currentTimeMillis
 
-          const registration = new Registration({
+          const registration = Registration.make({
             id: RegistrationId.make(Schema.randomUUID()),
             eventId,
             userId,

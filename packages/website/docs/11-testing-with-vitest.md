@@ -201,14 +201,14 @@ class User extends Schema.Class<User>("User")({
 
 describe("User", () => {
   it("creates valid user", () => {
-    const user = new User({ name: "Alice", age: 30 })
+    const user = User.make({ name: "Alice", age: 30 })
     strictEqual(user.name, "Alice")
     strictEqual(user.age, 30)
   })
 
   it("validates on construction", () => {
     // Throws ParseError for invalid data
-    expect(() => new User({ name: "", age: 30 })).toThrow()
+    expect(() => User.make({ name: "", age: 30 })).toThrow()
   })
 
   it.effect("decodes from unknown", () =>
@@ -241,7 +241,7 @@ type Result = typeof Result.Type
 
 describe("Result", () => {
   it("matches success", () => {
-    const success = new Success({ value: 42 })
+    const success = Success.make({ value: 42 })
     const result = Match.value(success).pipe(
       Match.tag("Success", ({ value }) => value),
       Match.tag("Failure", () => 0),
@@ -251,7 +251,7 @@ describe("Result", () => {
   })
 
   it("matches failure", () => {
-    const failure = new Failure({ error: "oops" })
+    const failure = Failure.make({ error: "oops" })
     const result = Match.value(failure).pipe(
       Match.tag("Success", ({ value }) => value),
       Match.tag("Failure", ({ error }) => error),
