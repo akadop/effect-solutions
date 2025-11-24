@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { Args, Command } from "@effect/cli";
+import { Args, Command, Options } from "@effect/cli";
 import { BunContext, BunRuntime } from "@effect/platform-bun";
 import { Console, Effect, Option, pipe } from "effect";
 import pc from "picocolors";
@@ -32,34 +32,66 @@ const colorizeCodeReferences = (text: string): string => {
   );
 };
 
-const formatRow =
-  (slugWidth: number, titleWidth: number) =>
-  (slug: string, title: string, description: string) =>
-    `${slug.padEnd(slugWidth)}  ${title.padEnd(titleWidth)}  ${description}`;
+const MIN_TERMINAL_WIDTH = 40;
+const FALLBACK_TERMINAL_WIDTH = 80;
+const MIN_DESCRIPTION_WIDTH = 20;
+
+const getTerminalWidth = () => {
+  const width =
+    typeof process.stdout?.columns === "number"
+      ? process.stdout.columns
+      : FALLBACK_TERMINAL_WIDTH;
+  return Math.max(MIN_TERMINAL_WIDTH, width);
+};
+
+const wrapText = (text: string, maxWidth: number) => {
+  if (text.trim() === "" || maxWidth <= 0) {
+    return [text];
+  }
+
+  const words = text.split(/\s+/);
+  const lines: Array<string> = [];
+  let current = "";
+
+  for (const word of words) {
+    if (current.length === 0) {
+      current = word;
+      continue;
+    }
+
+    if (current.length + 1 + word.length <= maxWidth) {
+      current = `${current} ${word}`;
+    } else {
+      lines.push(current);
+      current = word;
+    }
+  }
+
+  if (current.length > 0) {
+    lines.push(current);
+  }
+
+  return lines;
+};
 
 export const renderDocList = () => {
-  const slugWidth = Math.max(
-    "Slug".length,
-    ...DOCS.map((doc) => doc.slug.length),
-  );
-  const titleWidth = Math.max(
-    "Title".length,
-    ...DOCS.map((doc) => doc.title.length),
+  const indent = "  ";
+  const width = getTerminalWidth();
+  const descriptionWidth = Math.max(
+    MIN_DESCRIPTION_WIDTH,
+    width - indent.length,
   );
 
-  const format = formatRow(slugWidth, titleWidth);
-  const header = pc.bold(pc.cyan(format("Slug", "Title", "Description")));
-  const separator = pc.dim(
-    `${"-".repeat(slugWidth)}  ${"-".repeat(titleWidth)}  ${"-".repeat(20)}`,
-  );
+  const cards = DOCS.map((doc) => {
+    const titleLine = `${pc.green(doc.slug)}  ${pc.bold(pc.cyan(doc.title))}`;
+    const wrappedDescription = wrapText(doc.description, descriptionWidth).map(
+      (line) => `${indent}${pc.dim(line)}`,
+    );
 
-  const rows = DOCS.map((doc) =>
-    format(pc.green(doc.slug), pc.yellow(doc.title), pc.dim(doc.description)),
-  );
+    return [titleLine, ...wrappedDescription].join("\n");
+  });
 
-  const lines = [header, separator, ...rows];
-
-  return `${lines.join("\n")}\n`;
+  return `${cards.join("\n\n")}\n`;
 };
 
 export const renderDocs = (requested: ReadonlyArray<string>) => {
@@ -110,22 +142,25 @@ const showCommand = Command.make("show", {
 );
 
 const openIssueCommand = Command.make("open-issue", {
-  category: Args.text({ name: "category" }),
-  title: Args.text({ name: "title" }),
-  description: Args.text({ name: "description" }),
-  strategy: Args.optional(Args.text({ name: "strategy" })),
+  category: Options.text("category").pipe(Options.optional),
+  title: Options.text("title").pipe(Options.optional),
+  description: Options.text("description").pipe(Options.optional),
+  strategy: Options.text("strategy").pipe(Options.optional),
 }).pipe(
   Command.withDescription(
     "Open a pre-filled GitHub issue in the effect-solutions repo",
   ),
   Command.withHandler(({ category, title, description, strategy }) =>
     Effect.sync(() => {
+      const categoryValue = Option.getOrUndefined(category);
+      const titleValue = Option.getOrUndefined(title);
+      const descriptionValue = Option.getOrUndefined(description);
       const strategyValue = Option.getOrUndefined(strategy);
 
       return openIssue({
-        category: category as OpenIssueCategory,
-        title,
-        description,
+        category: categoryValue as OpenIssueCategory | undefined,
+        title: titleValue,
+        description: descriptionValue,
         ...(strategyValue
           ? { strategy: strategyValue as BrowserOpenStrategy }
           : {}),
@@ -164,6 +199,8 @@ if (import.meta.main) {
     maybeNotifyUpdate(CLI_NAME, CLI_VERSION),
     Effect.zipRight(runCli(process.argv)),
     Effect.provide(BunContext.layer),
+    Effect.tapErrorCause((cause) => Console.error(pc.red(`Error: ${cause}`))),
+    Effect.catchAll(() => Effect.sync(() => process.exit(1))),
     BunRuntime.runMain,
   );
 }
