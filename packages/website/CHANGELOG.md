@@ -1,5 +1,11 @@
 # @effect-best-practices/website
 
+## 0.4.5
+
+### Patch Changes
+
+- Clarify Effect.fn call-site tracing and yieldable errors documentation
+
 ## 0.4.4
 
 ### Patch Changes
