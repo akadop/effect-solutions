@@ -177,9 +177,9 @@ export function DocHeader({ docTitles }: DocHeaderProps) {
     }
   }
 
-  const iconKey = `${
-    isHovered && !isDocsListPage ? "arrow" : "book"
-  }-${hoverAnimationId}`;
+  const iconKey = isDocsListPage
+    ? "book"
+    : `${isHovered ? "arrow" : "book"}-${hoverAnimationId}`;
 
   return (
     <header className="relative h-16 lg:sticky lg:top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:backdrop-blur bottom-0 border-b border-neutral-800">
@@ -194,14 +194,14 @@ export function DocHeader({ docTitles }: DocHeaderProps) {
       <div className="max-w-screen-md mx-auto border-x border-neutral-800 flex items-center justify-between h-full">
         <Link
           href="/"
-          className="group flex-1 cursor-default"
+          className="group flex-1 h-full cursor-default"
           onBlur={handleBlur}
           onClick={handleClick}
           onFocus={handleFocus}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
-          <div className="flex items-center px-6 py-6 hover:bg-neutral-900/50">
+          <div className="flex items-center px-6 h-full hover:bg-neutral-900/50">
             <div className="flex items-center text-sm font-normal uppercase tracking-wider">
               <div className="relative w-5 h-5">
                 <AnimatePresence mode="popLayout" initial={false}>

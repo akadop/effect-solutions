@@ -12,18 +12,15 @@ interface NavTitleCyclerProps {
 const TITLE_VARIANTS = {
   initial: {
     y: -24,
-    opacity: 0.9,
-    filter: "blur(6px)",
+    opacity: 0.8
   },
   animate: {
     y: 0,
-    opacity: 1,
-    filter: "blur(0px)",
+    opacity: 1
   },
   exit: {
     y: 24,
-    opacity: 0.9,
-    filter: "blur(6px)",
+    opacity: 0.8
   },
 } as const;
 
@@ -46,9 +43,9 @@ export function NavTitleCycler({ title, className }: NavTitleCyclerProps) {
         className="relative grid px-1.5 py-1"
         style={{
           maskImage:
-            "linear-gradient(to bottom, transparent 0%, black 12px, black calc(100% - 12px), transparent 100%)",
+            "linear-gradient(to bottom, transparent 0%, black 4px, black calc(100% - 4px), transparent 100%)",
           WebkitMaskImage:
-            "linear-gradient(to bottom, transparent 0%, black 12px, black calc(100% - 12px), transparent 100%)",
+            "linear-gradient(to bottom, transparent 0%, black 4px, black calc(100% - 4px), transparent 100%)",
         }}
       >
         <AnimatePresence initial={false}>
@@ -60,9 +57,8 @@ export function NavTitleCycler({ title, className }: NavTitleCyclerProps) {
             exit="exit"
             transition={{
               type: "spring",
-              visualDuration: 0.4,
-              bounce: 0.3,
-              filter: { type: "tween", duration: 0.4, ease: "easeOut" },
+              visualDuration: 0.5,
+              bounce: 0.3
             }}
             className="block leading-tight will-change-transform whitespace-nowrap col-start-1 row-start-1"
           >
