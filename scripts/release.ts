@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 
+import { readdir } from "node:fs/promises"
 import { $ } from "bun"
 
 // Release script that handles everything:
@@ -9,12 +10,24 @@ import { $ } from "bun"
 // 4. Run changeset version + tag
 // 5. Push with tags
 
+async function hasChangesets(): Promise<boolean> {
+  const files = await readdir(".changeset")
+  return files.some((f) => f.endsWith(".md") && f !== "README.md")
+}
+
 async function run() {
+  // Check for changesets first
+  if (!(await hasChangesets())) {
+    console.log("⚠️  No changesets found. Create one with:")
+    console.log('   bun scripts/changeset-named.ts "description"')
+    process.exit(1)
+  }
+
   console.log("📸 Generating OG images...")
-  await $`bun --cwd packages/website run generate:og`
+  await $`bun ./scripts/generate-og.ts`.cwd("packages/website")
 
   console.log("\n📦 Generating CLI manifest...")
-  await $`bun --cwd packages/cli scripts/generate-manifest.ts`
+  await $`bun ./scripts/generate-manifest.ts`.cwd("packages/cli")
 
   // Check for uncommitted changes
   const status = await $`git status --porcelain`.text()
@@ -22,14 +35,6 @@ async function run() {
     console.log("\n📝 Committing generated files...")
     await $`git add -A`
     await $`git commit -m "Generate OG images and manifest"`
-  }
-
-  // Check if there are changesets to consume
-  const changesets = await $`ls .changeset/*.md 2>/dev/null | grep -v README.md || true`.text()
-  if (!changesets.trim()) {
-    console.log("\n⚠️  No changesets found. Create one with:")
-    console.log('   bun scripts/changeset-named.ts "description"')
-    process.exit(1)
   }
 
   console.log("\n🔖 Running changeset version...")
