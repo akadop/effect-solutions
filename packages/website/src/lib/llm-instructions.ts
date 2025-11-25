@@ -33,6 +33,7 @@ Ask the user which mode they prefer:
 - [ ] Install Effect dependencies
 - [ ] Effect Language Service setup
 - [ ] TypeScript compiler configuration
+- [ ] Package scripts
 - [ ] Agent instruction files
 - [ ] Clone Effect source
 - [ ] Summary
@@ -80,6 +81,15 @@ This configures compiler options (separate from the language service plugin abov
 - Read: \`effect-solutions show tsconfig\`
 - Compare recommended settings with existing \`tsconfig.json\`
 - Apply recommended settings
+
+---
+
+## Package Scripts
+
+Check if \`package.json\` already has a typecheck script (e.g., \`typecheck\`, \`check\`, \`type-check\`). If not, add one for CLI type checking (CI, git hooks, etc.):
+
+- Simple projects: \`"typecheck": "tsc --noEmit"\`
+- Monorepos with project references: \`"typecheck": "tsc --build --noEmit"\`
 
 ---
 
