@@ -6,11 +6,18 @@ import { join } from "node:path";
 const DOCS_DIR = join(import.meta.dir, "../packages/website/docs");
 const TEMP_DIR = join(import.meta.dir, "../.docs-typecheck");
 
-async function extractCodeBlocks() {
+type ExtractedBlock = {
+  file: string;
+  startLine: number;
+  blockNumber: number;
+  lines: string[];
+};
+
+async function extractCodeBlocks(): Promise<ExtractedBlock[]> {
   const files = await readdir(DOCS_DIR);
   const mdFiles = files.filter((f) => f.endsWith(".md"));
 
-  const allCode: string[] = [];
+  const allBlocks: ExtractedBlock[] = [];
 
   for (const file of mdFiles) {
     const content = await readFile(join(DOCS_DIR, file), "utf-8");
@@ -30,9 +37,13 @@ async function extractCodeBlocks() {
         currentBlock = [];
       } else if (line.startsWith("```") && inCodeBlock) {
         if (isTypeScriptBlock && currentBlock.length > 0) {
-          allCode.push(
-            `// ${file}:${i - currentBlock.length} (block ${++blockNum})\n${currentBlock.join("\n")}`,
-          );
+          blockNum += 1;
+          allBlocks.push({
+            file,
+            startLine: i - currentBlock.length,
+            blockNumber: blockNum,
+            lines: currentBlock.slice(),
+          });
         }
         inCodeBlock = false;
         isTypeScriptBlock = false;
@@ -43,7 +54,7 @@ async function extractCodeBlocks() {
     }
   }
 
-  return allCode;
+  return allBlocks;
 }
 
 async function main() {
@@ -60,10 +71,21 @@ async function main() {
   // Clean and create temp dir
   await rm(TEMP_DIR, { recursive: true, force: true });
   await mkdir(TEMP_DIR, { recursive: true });
+  const TMP_SUBDIR = join(TEMP_DIR, ".tmp");
+  await mkdir(TMP_SUBDIR, { recursive: true });
 
-  // Write all blocks to a single file (simpler, accepts some duplicates)
-  const combined = blocks.join("\n\n");
-  await writeFile(join(TEMP_DIR, "docs.ts"), combined);
+  // Write each block to its own module to avoid global name collisions
+  await Promise.all(
+    blocks.map((block) => {
+      const base = block.file.replace(/\.md$/, "").replace(/[^a-zA-Z0-9_-]/g, "-");
+      const filename = `${base}-block-${block.blockNumber
+        .toString()
+        .padStart(3, "0")}.ts`;
+      const header = `// ${block.file}:${block.startLine} (block ${block.blockNumber})`;
+      const content = [header, "export {};", ...block.lines].join("\n");
+      return writeFile(join(TEMP_DIR, filename), content);
+    }),
+  );
 
   // Create a minimal tsconfig for the temp dir
   const tsconfig = {
@@ -72,6 +94,8 @@ async function main() {
       lib: ["ES2022", "DOM"],
       noEmit: true,
       skipLibCheck: true,
+      // Ensure every snippet is treated as an isolated module
+      moduleDetection: "force",
     },
     include: ["*.ts"],
   };
@@ -84,6 +108,10 @@ async function main() {
   console.log("Running TypeScript compiler...");
   const result = spawnSync("bunx", ["tsc", "-p", TEMP_DIR], {
     stdio: "inherit",
+    env: {
+      ...process.env,
+      TMPDIR: TMP_SUBDIR,
+    },
   });
 
   // Cleanup

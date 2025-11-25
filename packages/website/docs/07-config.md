@@ -58,10 +58,10 @@ const testConfigProvider = ConfigProvider.fromMap(
 )
 
 // Apply the provider
-const TestConfigLayer = Layer.setConfigProvider(testConfigProvider)
+const testConfigLayer = Layer.setConfigProvider(testConfigProvider)
 
 // Run with test config
-Effect.runPromise(program.pipe(Effect.provide(TestConfigLayer)))
+Effect.runPromise(program.pipe(Effect.provide(testConfigLayer)))
 ```
 
 ## Recommended Pattern: Config Layers
@@ -231,7 +231,7 @@ Override where config is loaded from using `Layer.setConfigProvider`:
 ```typescript
 import { ConfigProvider, Layer } from "effect"
 
-const TestConfigLayer = Layer.setConfigProvider(
+const testConfigLayer = Layer.setConfigProvider(
   ConfigProvider.fromMap(
     new Map([
       ["API_KEY", "test-key"],
@@ -240,21 +240,21 @@ const TestConfigLayer = Layer.setConfigProvider(
   )
 )
 
-const JsonConfigLayer = Layer.setConfigProvider(
+const jsonConfigLayer = Layer.setConfigProvider(
   ConfigProvider.fromJson({
     API_KEY: "prod-key",
     PORT: 8080,
   })
 )
 
-const PrefixedConfigLayer = Layer.setConfigProvider(
+const prefixedConfigLayer = Layer.setConfigProvider(
   ConfigProvider.fromEnv().pipe(
     ConfigProvider.nested("APP") // Reads APP_API_KEY, APP_PORT, etc.
   )
 )
 
 // Usage: provide whichever layer matches the environment
-Effect.runPromise(program.pipe(Effect.provide(TestConfigLayer)))
+Effect.runPromise(program.pipe(Effect.provide(testConfigLayer)))
 ```
 
 ## Usage in Tests

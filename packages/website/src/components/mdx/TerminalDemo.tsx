@@ -1,10 +1,12 @@
 "use client";
 
 import { Args, Command, Options } from "@effect/cli";
+import { BrowserKeyValueStore } from "@effect/platform-browser";
 import {
   FileSystem,
   type FileSystem as FileSystemType,
 } from "@effect/platform/FileSystem";
+import { KeyValueStore } from "@effect/platform/KeyValueStore";
 import {
   Path,
   type Path as PathType,
@@ -43,7 +45,7 @@ class Task extends Schema.Class<Task>("Task")({
   done: Schema.Boolean,
 }) {
   toggle() {
-    return new Task({ ...this, done: !this.done });
+    return Task.make({ ...this, done: !this.done });
   }
 }
 
@@ -51,7 +53,7 @@ class TaskList extends Schema.Class<TaskList>("TaskList")({
   tasks: Schema.Array(Task),
 }) {
   static Json = Schema.parseJson(TaskList);
-  static empty = new TaskList({ tasks: [] });
+  static empty = TaskList.make({ tasks: [] });
 
   get nextId(): TaskId {
     if (this.tasks.length === 0) return TaskId.make(1);
@@ -59,8 +61,8 @@ class TaskList extends Schema.Class<TaskList>("TaskList")({
   }
 
   add(text: string): [TaskList, Task] {
-    const task = new Task({ id: this.nextId, text, done: false });
-    return [new TaskList({ tasks: [...this.tasks, task] }), task];
+    const task = Task.make({ id: this.nextId, text, done: false });
+    return [TaskList.make({ tasks: [...this.tasks, task] }), task];
   }
 
   toggle(id: TaskId): [TaskList, Option.Option<Task>] {
@@ -70,7 +72,7 @@ class TaskList extends Schema.Class<TaskList>("TaskList")({
     // biome-ignore lint/style/noNonNullAssertion: index check above
     const updated = this.tasks[index]!.toggle();
     const tasks = Arr.modify(this.tasks, index, () => updated);
-    return [new TaskList({ tasks }), Option.some(updated)];
+    return [TaskList.make({ tasks }), Option.some(updated)];
   }
 }
 
@@ -89,72 +91,66 @@ class TaskRepo extends Context.Tag("TaskRepo")<
 >() {}
 
 // =============================================================================
-// Browser TaskRepo (localStorage)
+// Browser TaskRepo (KeyValueStore)
 // =============================================================================
 
 const STORAGE_KEY = "effect-solutions-tasks-demo";
 const INITIALIZED_KEY = "effect-solutions-tasks-initialized";
 
-const DEFAULT_TASKS = new TaskList({
+const DEFAULT_TASKS = TaskList.make({
   tasks: [
-    new Task({
+    Task.make({
       id: TaskId.make(1),
       text: "Run the agent-guided setup",
       done: false,
     }),
-    new Task({ id: TaskId.make(2), text: "Become effect-pilled", done: false }),
+    Task.make({ id: TaskId.make(2), text: "Become effect-pilled", done: false }),
   ],
 });
 
-function loadTaskList(): TaskList {
-  if (typeof window === "undefined") return DEFAULT_TASKS;
-  try {
-    if (!localStorage.getItem(INITIALIZED_KEY)) {
-      localStorage.setItem(INITIALIZED_KEY, "true");
-      const json = JSON.stringify({ tasks: DEFAULT_TASKS.tasks });
-      localStorage.setItem(STORAGE_KEY, json);
-      return DEFAULT_TASKS;
-    }
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return TaskList.empty;
-    const parsed = Schema.decodeUnknownSync(TaskList.Json)(stored);
-    return parsed;
-  } catch {
-    return TaskList.empty;
-  }
-}
+const browserTaskRepoLayer = Layer.effect(
+  TaskRepo,
+  Effect.gen(function* () {
+    const kv = (yield* KeyValueStore).forSchema(TaskList);
 
-function saveTaskList(list: TaskList): void {
-  if (typeof window === "undefined") return;
-  const json = JSON.stringify({ tasks: list.tasks });
-  localStorage.setItem(STORAGE_KEY, json);
-}
+    const loadTaskList = Effect.gen(function* () {
+      const initialized = yield* kv.has(INITIALIZED_KEY);
+      if (!initialized) {
+        yield* kv.set(INITIALIZED_KEY, TaskList.empty);
+        yield* kv.set(STORAGE_KEY, DEFAULT_TASKS);
+        return DEFAULT_TASKS;
+      }
+      const stored = yield* kv.get(STORAGE_KEY);
+      return Option.getOrElse(stored, () => TaskList.empty);
+    }).pipe(Effect.orElseSucceed(() => TaskList.empty));
 
-const BrowserTaskRepo = Layer.succeed(TaskRepo, {
-  list: (all) =>
-    Effect.sync(() => {
-      const taskList = loadTaskList();
-      return all ? taskList.tasks : taskList.tasks.filter((t) => !t.done);
-    }),
-  add: (text) =>
-    Effect.sync(() => {
-      const list = loadTaskList();
-      const [newList, task] = list.add(text);
-      saveTaskList(newList);
-      return task;
-    }),
-  toggle: (id) =>
-    Effect.sync(() => {
-      const list = loadTaskList();
-      const [newList, task] = list.toggle(id);
-      saveTaskList(newList);
-      return task;
-    }),
-  clear: () =>
-    Effect.sync(() => {
-      saveTaskList(TaskList.empty);
-    }),
-});
+    const saveTaskList = (list: TaskList) =>
+      kv.set(STORAGE_KEY, list).pipe(Effect.ignore);
+
+    return TaskRepo.of({
+      list: (all) =>
+        Effect.gen(function* () {
+          const taskList = yield* loadTaskList;
+          return all ? taskList.tasks : taskList.tasks.filter((t) => !t.done);
+        }),
+      add: (text) =>
+        Effect.gen(function* () {
+          const list = yield* loadTaskList;
+          const [newList, task] = list.add(text);
+          yield* saveTaskList(newList);
+          return task;
+        }),
+      toggle: (id) =>
+        Effect.gen(function* () {
+          const list = yield* loadTaskList;
+          const [newList, task] = list.toggle(id);
+          yield* saveTaskList(newList);
+          return task;
+        }),
+      clear: () => saveTaskList(TaskList.empty),
+    });
+  }),
+).pipe(Layer.provide(BrowserKeyValueStore.layerLocalStorage));
 
 // =============================================================================
 // Mock Console (captures output) - based on Effect's test services
@@ -208,7 +204,7 @@ const makeConsoleMock = Effect.gen(function* () {
 // Mock Platform Services (minimal browser stubs)
 // =============================================================================
 
-const MockTerminal = Layer.succeed(TerminalTag, {
+const mockTerminalLayer = Layer.succeed(TerminalTag, {
   columns: Effect.succeed(80),
   readInput: Effect.die("Terminal.readInput not supported in browser"),
   readLine: Effect.die("Terminal.readLine not supported in browser"),
@@ -219,7 +215,7 @@ const MockTerminal = Layer.succeed(TerminalTag, {
 const notSupported = (name: string) => () =>
   Effect.die(`FileSystem.${name} not supported in browser`);
 
-const MockFileSystem = Layer.succeed(FileSystem, {
+const mockFileSystemLayer = Layer.succeed(FileSystem, {
   access: notSupported("access"),
   copy: notSupported("copy"),
   copyFile: notSupported("copyFile"),
@@ -252,7 +248,7 @@ const MockFileSystem = Layer.succeed(FileSystem, {
 } as FileSystemType);
 
 // Stub Path - CLI framework requires it but we don't use path operations
-const MockPath = Layer.succeed(Path, {
+const mockPathLayer = Layer.succeed(Path, {
   [PathTypeId]: PathTypeId,
   sep: "/",
   basename: (path: string) => path.split("/").pop() ?? "",
@@ -281,7 +277,7 @@ const MockPath = Layer.succeed(Path, {
 } satisfies PathType);
 
 // Combined browser platform layer
-const BrowserPlatform = Layer.mergeAll(MockTerminal, MockFileSystem, MockPath);
+const browserPlatformLayer = Layer.mergeAll(mockTerminalLayer, mockFileSystemLayer, mockPathLayer);
 
 // =============================================================================
 // CLI Commands
@@ -389,8 +385,8 @@ async function runCliCommand(args: string): Promise<CliResult> {
 
     const exit = yield* cli(argv).pipe(
       Effect.provide(consoleLayer),
-      Effect.provide(BrowserPlatform),
-      Effect.provide(BrowserTaskRepo),
+      Effect.provide(browserPlatformLayer),
+      Effect.provide(browserTaskRepoLayer),
       Effect.exit,
     );
 
@@ -896,8 +892,15 @@ export function TerminalDemo() {
       e.stopPropagation();
       playClickSfx();
       setHistory([]);
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(INITIALIZED_KEY);
+      // Clear storage via KeyValueStore
+      Effect.gen(function* () {
+        const kv = yield* KeyValueStore;
+        yield* kv.remove(STORAGE_KEY);
+        yield* kv.remove(INITIALIZED_KEY);
+      }).pipe(
+        Effect.provide(BrowserKeyValueStore.layerLocalStorage),
+        Effect.runPromise,
+      );
     },
     [playClickSfx],
   );

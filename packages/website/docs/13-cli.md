@@ -346,9 +346,9 @@ const cli = Command.run(app, {
   version: "1.0.0"
 })
 
-const MainLayer = Layer.provideMerge(TaskRepo.layer, BunContext.layer)
+const mainLayer = Layer.provideMerge(TaskRepo.layer, BunContext.layer)
 
-cli(process.argv).pipe(Effect.provide(MainLayer), BunRuntime.runMain)
+cli(process.argv).pipe(Effect.provide(mainLayer), BunRuntime.runMain)
 ```
 
 ### Using the CLI
