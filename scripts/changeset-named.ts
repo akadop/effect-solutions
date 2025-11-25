@@ -1,48 +1,43 @@
 #!/usr/bin/env bun
-import { readdir, rename } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-const name = process.argv[2];
+const PACKAGES = {
+  website: "@effect-best-practices/website",
+  cli: "effect-solutions",
+} as const;
 
-if (!name) {
-  console.error("Usage: bun changeset:named <name>");
+const description = process.argv[2];
+const packageArg = (process.argv[3] || "website") as keyof typeof PACKAGES;
+const bump = process.argv[4] || "patch";
+
+if (!description) {
+  console.error("Usage: bun scripts/changeset-named.ts <description> [website|cli] [patch|minor|major]");
+  console.error("Defaults: website, patch");
   process.exit(1);
 }
 
-const changesetDir = ".changeset";
-
-// List existing changesets before running changeset
-const beforeFiles = new Set(await readdir(changesetDir));
-
-// Run changeset in foreground - user completes it interactively
-const proc = Bun.spawn(["bunx", "changeset", "add"], {
-  stdin: "inherit",
-  stdout: "inherit",
-  stderr: "inherit",
-});
-
-await proc.exited;
-
-if (proc.exitCode !== 0) {
-  process.exit(proc.exitCode);
-}
-
-// Find the newly created file
-const afterFiles = await readdir(changesetDir);
-const newFile = afterFiles.find(
-  (file: string) => !beforeFiles.has(file) && file.endsWith(".md"),
-);
-
-if (!newFile) {
-  console.error("No new changeset file found");
+if (!(packageArg in PACKAGES)) {
+  console.error(`Invalid package: ${packageArg}. Use: website or cli`);
   process.exit(1);
 }
 
-// Rename to custom name
-const kebabName = name.replace(/\s+/g, "-").toLowerCase();
-const targetName = `${kebabName}.md`;
-const oldPath = join(changesetDir, newFile);
-const newPath = join(changesetDir, targetName);
+if (!["patch", "minor", "major"].includes(bump)) {
+  console.error(`Invalid bump: ${bump}. Use: patch, minor, or major`);
+  process.exit(1);
+}
 
-await rename(oldPath, newPath);
-console.log(`\n✅ Created changeset: ${targetName}`);
+const packageName = PACKAGES[packageArg];
+const kebabName = description.replace(/\s+/g, "-").toLowerCase();
+const fileName = `${kebabName}.md`;
+const filePath = join(".changeset", fileName);
+
+const content = `---
+"${packageName}": ${bump}
+---
+
+${description}
+`;
+
+await writeFile(filePath, content);
+console.log(`✅ Created changeset: ${fileName}`);
