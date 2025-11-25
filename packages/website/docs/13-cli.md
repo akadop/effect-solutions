@@ -404,3 +404,20 @@ The tasks persist to `tasks.json`:
 | Platform layer | `BunContext.layer` or `NodeContext.layer` |
 
 For the full API, see the [@effect/cli documentation](https://effect-ts.github.io/effect/docs/cli).
+
+## Miscellaneous
+
+### Version from package.json
+
+Import your version from `package.json` to keep it in sync with your published package:
+
+```typescript
+import pkg from "./package.json" with { type: "json" }
+
+const cli = Command.run(app, {
+  name: "tasks",
+  version: pkg.version
+})
+```
+
+Requires `"resolveJsonModule": true` in tsconfig.

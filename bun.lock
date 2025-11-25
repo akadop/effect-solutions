@@ -26,7 +26,7 @@
     },
     "packages/cli": {
       "name": "effect-solutions",
-      "version": "0.4.8",
+      "version": "0.4.13",
       "bin": {
         "effect-solutions": "./bin.js",
       },
@@ -47,8 +47,10 @@
     },
     "packages/website": {
       "name": "@effect-best-practices/website",
-      "version": "0.4.8",
+      "version": "0.4.13",
       "dependencies": {
+        "@effect/cli": "^0.72.1",
+        "@effect/platform": "^0.93.3",
         "@phosphor-icons/react": "^2.1.10",
         "@tailwindcss/typography": "^0.5.19",
         "@vercel/analytics": "^1.5.0",

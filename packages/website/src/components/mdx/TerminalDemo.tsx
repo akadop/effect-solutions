@@ -1,21 +1,441 @@
 "use client";
 
+import { Args, Command, Options } from "@effect/cli";
+import {
+  FileSystem,
+  type FileSystem as FileSystemType,
+} from "@effect/platform/FileSystem";
+import {
+  Path,
+  type Path as PathType,
+  TypeId as PathTypeId,
+} from "@effect/platform/Path";
+import {
+  Terminal as TerminalTag,
+  type Terminal,
+} from "@effect/platform/Terminal";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Array as Arr,
+  Cause,
+  Console,
+  Context,
+  Effect,
+  Exit,
+  Layer,
+  Option,
+  Ref,
+  Schema,
+} from "effect";
+
+// =============================================================================
+// Task Schema & Domain
+// =============================================================================
+
+const TaskId = Schema.Number.pipe(Schema.brand("TaskId"));
+type TaskId = typeof TaskId.Type;
+
+class Task extends Schema.Class<Task>("Task")({
+  id: TaskId,
+  text: Schema.NonEmptyString,
+  done: Schema.Boolean,
+}) {
+  toggle() {
+    return new Task({ ...this, done: !this.done });
+  }
+}
+
+class TaskList extends Schema.Class<TaskList>("TaskList")({
+  tasks: Schema.Array(Task),
+}) {
+  static Json = Schema.parseJson(TaskList);
+  static empty = new TaskList({ tasks: [] });
+
+  get nextId(): TaskId {
+    if (this.tasks.length === 0) return TaskId.make(1);
+    return TaskId.make(Math.max(...this.tasks.map((t) => t.id)) + 1);
+  }
+
+  add(text: string): [TaskList, Task] {
+    const task = new Task({ id: this.nextId, text, done: false });
+    return [new TaskList({ tasks: [...this.tasks, task] }), task];
+  }
+
+  toggle(id: TaskId): [TaskList, Option.Option<Task>] {
+    const index = this.tasks.findIndex((t) => t.id === id);
+    if (index === -1) return [this, Option.none()];
+
+    const updated = this.tasks[index]!.toggle();
+    const tasks = Arr.modify(this.tasks, index, () => updated);
+    return [new TaskList({ tasks }), Option.some(updated)];
+  }
+}
+
+// =============================================================================
+// TaskRepo Service
+// =============================================================================
+
+class TaskRepo extends Context.Tag("TaskRepo")<
+  TaskRepo,
+  {
+    readonly list: (all?: boolean) => Effect.Effect<ReadonlyArray<Task>>;
+    readonly add: (text: string) => Effect.Effect<Task>;
+    readonly toggle: (id: TaskId) => Effect.Effect<Option.Option<Task>>;
+    readonly clear: () => Effect.Effect<void>;
+  }
+>() {}
+
+// =============================================================================
+// Browser TaskRepo (localStorage)
+// =============================================================================
+
+const STORAGE_KEY = "effect-solutions-tasks-demo";
+const INITIALIZED_KEY = "effect-solutions-tasks-initialized";
+
+const DEFAULT_TASKS = new TaskList({
+  tasks: [
+    new Task({ id: TaskId.make(1), text: "Run the agent-guided setup", done: false }),
+    new Task({ id: TaskId.make(2), text: "Become effect-pilled", done: false }),
+  ],
+});
+
+function loadTaskList(): TaskList {
+  if (typeof window === "undefined") return DEFAULT_TASKS;
+  try {
+    if (!localStorage.getItem(INITIALIZED_KEY)) {
+      localStorage.setItem(INITIALIZED_KEY, "true");
+      const json = JSON.stringify({ tasks: DEFAULT_TASKS.tasks });
+      localStorage.setItem(STORAGE_KEY, json);
+      return DEFAULT_TASKS;
+    }
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return TaskList.empty;
+    const parsed = Schema.decodeUnknownSync(TaskList.Json)(stored);
+    return parsed;
+  } catch {
+    return TaskList.empty;
+  }
+}
+
+function saveTaskList(list: TaskList): void {
+  if (typeof window === "undefined") return;
+  const json = JSON.stringify({ tasks: list.tasks });
+  localStorage.setItem(STORAGE_KEY, json);
+}
+
+const BrowserTaskRepo = Layer.succeed(TaskRepo, {
+  list: (all) =>
+    Effect.sync(() => {
+      const taskList = loadTaskList();
+      return all ? taskList.tasks : taskList.tasks.filter((t) => !t.done);
+    }),
+  add: (text) =>
+    Effect.sync(() => {
+      const list = loadTaskList();
+      const [newList, task] = list.add(text);
+      saveTaskList(newList);
+      return task;
+    }),
+  toggle: (id) =>
+    Effect.sync(() => {
+      const list = loadTaskList();
+      const [newList, task] = list.toggle(id);
+      saveTaskList(newList);
+      return task;
+    }),
+  clear: () =>
+    Effect.sync(() => {
+      saveTaskList(TaskList.empty);
+    }),
+});
+
+// =============================================================================
+// Mock Console (captures output) - based on Effect's test services
+// =============================================================================
+
+interface MockConsole extends Console.Console {
+  readonly getLines: () => Effect.Effect<ReadonlyArray<string>>;
+}
+
+const MockConsoleTag = Context.GenericTag<Console.Console, MockConsole>(
+  "effect/Console",
+);
+
+const makeConsoleMock = Effect.gen(function* () {
+  const lines = yield* Ref.make<string[]>([]);
+
+  const getLines: MockConsole["getLines"] = () => Ref.get(lines);
+
+  const log: MockConsole["log"] = (...args) =>
+    Ref.update(lines, (l) => [...l, ...args.map(String)]);
+
+  return MockConsoleTag.of({
+    [Console.TypeId]: Console.TypeId,
+    getLines,
+    log,
+    unsafe: globalThis.console,
+    assert: () => Effect.void,
+    clear: Effect.void,
+    count: () => Effect.void,
+    countReset: () => Effect.void,
+    debug: () => Effect.void,
+    dir: () => Effect.void,
+    dirxml: () => Effect.void,
+    error: log, // Also capture errors
+    group: () => Effect.void,
+    groupEnd: Effect.void,
+    info: () => Effect.void,
+    table: () => Effect.void,
+    time: () => Effect.void,
+    timeEnd: () => Effect.void,
+    timeLog: () => Effect.void,
+    trace: () => Effect.void,
+    warn: () => Effect.void,
+  });
+});
+
+// =============================================================================
+// Mock Platform Services (minimal browser stubs)
+// =============================================================================
+
+const MockTerminal = Layer.succeed(TerminalTag, {
+  columns: Effect.succeed(80),
+  readInput: Effect.die("Terminal.readInput not supported in browser"),
+  readLine: Effect.die("Terminal.readLine not supported in browser"),
+  display: (text: string) => Console.log(text),
+} as Terminal);
+
+// Stub FileSystem - CLI framework requires it but we don't use file operations
+const notSupported = (name: string) => () =>
+  Effect.die(`FileSystem.${name} not supported in browser`);
+
+const MockFileSystem = Layer.succeed(
+  FileSystem,
+  {
+    access: notSupported("access"),
+    copy: notSupported("copy"),
+    copyFile: notSupported("copyFile"),
+    chmod: notSupported("chmod"),
+    chown: notSupported("chown"),
+    exists: notSupported("exists"),
+    link: notSupported("link"),
+    makeDirectory: notSupported("makeDirectory"),
+    makeTempDirectory: notSupported("makeTempDirectory"),
+    makeTempDirectoryScoped: notSupported("makeTempDirectoryScoped"),
+    makeTempFile: notSupported("makeTempFile"),
+    makeTempFileScoped: notSupported("makeTempFileScoped"),
+    open: notSupported("open"),
+    readDirectory: notSupported("readDirectory"),
+    readFile: notSupported("readFile"),
+    readFileString: notSupported("readFileString"),
+    readLink: notSupported("readLink"),
+    realPath: notSupported("realPath"),
+    remove: notSupported("remove"),
+    rename: notSupported("rename"),
+    sink: notSupported("sink"),
+    stat: notSupported("stat"),
+    stream: notSupported("stream"),
+    symlink: notSupported("symlink"),
+    truncate: notSupported("truncate"),
+    utimes: notSupported("utimes"),
+    watch: notSupported("watch"),
+    writeFile: notSupported("writeFile"),
+    writeFileString: notSupported("writeFileString"),
+  } as FileSystemType,
+);
+
+// Stub Path - CLI framework requires it but we don't use path operations
+const MockPath = Layer.succeed(Path, {
+  [PathTypeId]: PathTypeId,
+  sep: "/",
+  basename: (path: string) => path.split("/").pop() ?? "",
+  dirname: (path: string) => path.split("/").slice(0, -1).join("/") || "/",
+  extname: (path: string) => {
+    const base = path.split("/").pop() ?? "";
+    const dot = base.lastIndexOf(".");
+    return dot > 0 ? base.slice(dot) : "";
+  },
+  format: () => "",
+  fromFileUrl: () => Effect.die("Path.fromFileUrl not supported in browser"),
+  isAbsolute: (path: string) => path.startsWith("/"),
+  join: (...paths: ReadonlyArray<string>) => paths.join("/"),
+  normalize: (path: string) => path,
+  parse: (path: string) => ({
+    root: path.startsWith("/") ? "/" : "",
+    dir: path.split("/").slice(0, -1).join("/"),
+    base: path.split("/").pop() ?? "",
+    ext: "",
+    name: path.split("/").pop() ?? "",
+  }),
+  relative: (from: string, to: string) => to,
+  resolve: (...paths: ReadonlyArray<string>) => paths.join("/"),
+  toFileUrl: () => Effect.die("Path.toFileUrl not supported in browser"),
+  toNamespacedPath: (path: string) => path,
+} satisfies PathType);
+
+// Combined browser platform layer
+const BrowserPlatform = Layer.mergeAll(MockTerminal, MockFileSystem, MockPath);
+
+// =============================================================================
+// CLI Commands
+// =============================================================================
+
+// add <task>
+const textArg = Args.text({ name: "task" }).pipe(
+  Args.withDescription("The task description"),
+);
+
+const addCommand = Command.make("add", { text: textArg }, ({ text }) =>
+  Effect.gen(function* () {
+    const repo = yield* TaskRepo;
+    const task = yield* repo.add(text);
+    yield* Console.log(`Added task #${task.id}: ${task.text}`);
+  }),
+).pipe(Command.withDescription("Add a new task"));
+
+// list [--all]
+const allOption = Options.boolean("all").pipe(
+  Options.withAlias("a"),
+  Options.withDescription("Show all tasks including completed"),
+);
+
+const listCommand = Command.make("list", { all: allOption }, ({ all }) =>
+  Effect.gen(function* () {
+    const repo = yield* TaskRepo;
+    const tasks = yield* repo.list(all);
+
+    if (tasks.length === 0) {
+      yield* Console.log("No tasks.");
+      return;
+    }
+
+    for (const task of tasks) {
+      const status = task.done ? "[x]" : "[ ]";
+      yield* Console.log(`${status} #${task.id} ${task.text}`);
+    }
+  }),
+).pipe(Command.withDescription("List pending tasks"));
+
+// toggle <id>
+const idArg = Args.integer({ name: "id" }).pipe(
+  Args.withDescription("The task ID to toggle"),
+);
+
+const toggleCommand = Command.make("toggle", { id: idArg }, ({ id }) =>
+  Effect.gen(function* () {
+    const repo = yield* TaskRepo;
+    const result = yield* repo.toggle(TaskId.make(id));
+
+    yield* Option.match(result, {
+      onNone: () => Console.log(`Task #${id} not found`),
+      onSome: (task) =>
+        Console.log(`Toggled: ${task.text} (${task.done ? "done" : "pending"})`),
+    });
+  }),
+).pipe(Command.withDescription("Toggle a task's done status"));
+
+// clear
+const clearCommand = Command.make("clear", {}, () =>
+  Effect.gen(function* () {
+    const repo = yield* TaskRepo;
+    yield* repo.clear();
+    yield* Console.log("Cleared all tasks.");
+  }),
+).pipe(Command.withDescription("Clear all tasks"));
+
+// Root command with subcommands
+const app = Command.make("tasks", {}).pipe(
+  Command.withDescription("A simple task manager"),
+  Command.withSubcommands([addCommand, listCommand, toggleCommand, clearCommand]),
+);
+
+const cli = Command.run(app, {
+  name: "tasks",
+  version: "1.0.0",
+});
+
+// =============================================================================
+// Run CLI in Browser
+// =============================================================================
+
+interface CliResult {
+  output: string;
+  isError?: boolean;
+}
+
+async function runCliCommand(args: string): Promise<CliResult> {
+  // Build argv: ["node", "tasks", ...args]
+  const argv = ["node", "tasks", ...parseArgs(args)];
+
+  const program = Effect.gen(function* () {
+    const mockConsole = yield* makeConsoleMock;
+    const consoleLayer = Layer.succeed(MockConsoleTag, mockConsole);
+
+    const exit = yield* cli(argv).pipe(
+      Effect.provide(consoleLayer),
+      Effect.provide(BrowserPlatform),
+      Effect.provide(BrowserTaskRepo),
+      Effect.exit,
+    );
+
+    const lines = yield* mockConsole.getLines();
+    const output = lines.join("\n");
+
+    if (Exit.isFailure(exit)) {
+      // Return captured output as error, or extract error from cause
+      if (output) {
+        return { output, isError: true };
+      }
+      const maybeError = Cause.failureOption(exit.cause);
+      if (Option.isSome(maybeError)) {
+        return { output: String(maybeError.value), isError: true };
+      }
+      return { output: "Unknown error", isError: true };
+    }
+
+    return { output, isError: false };
+  });
+
+  return Effect.runPromise(program);
+}
+
+function parseArgs(input: string): string[] {
+  const args: string[] = [];
+  let current = "";
+  let inQuote: string | null = null;
+
+  for (const char of input) {
+    if (inQuote) {
+      if (char === inQuote) {
+        inQuote = null;
+      } else {
+        current += char;
+      }
+    } else if (char === '"' || char === "'") {
+      inQuote = char;
+    } else if (char === " ") {
+      if (current) {
+        args.push(current);
+        current = "";
+      }
+    } else {
+      current += char;
+    }
+  }
+  if (current) args.push(current);
+  return args;
+}
+
+// =============================================================================
+// UI Helpers
+// =============================================================================
 
 interface HistoryEntry {
   input: string;
   output: string;
   isError?: boolean;
 }
-
-interface Task {
-  id: number;
-  text: string;
-  done: boolean;
-}
-
-const STORAGE_KEY = "effect-solutions-tasks-demo";
 
 const PLACEHOLDER_HINTS = [
   'add "Buy milk"',
@@ -51,145 +471,6 @@ function getAutocomplete(input: string, cursorAtEnd: boolean): string | null {
   return null;
 }
 
-const DEFAULT_TASKS: Task[] = [
-  { id: 1, text: "Run the agent-guided setup", done: false },
-  { id: 2, text: "Become effect-pilled", done: false },
-];
-
-const INITIALIZED_KEY = "effect-solutions-tasks-initialized";
-
-function loadTasks(): Task[] {
-  if (typeof window === "undefined") return DEFAULT_TASKS;
-  try {
-    if (!localStorage.getItem(INITIALIZED_KEY)) {
-      localStorage.setItem(INITIALIZED_KEY, "true");
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_TASKS));
-      return DEFAULT_TASKS;
-    }
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveTasks(tasks: Task[]) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-}
-
-function getNextId(tasks: Task[]): number {
-  if (tasks.length === 0) return 1;
-  return Math.max(...tasks.map((t) => t.id)) + 1;
-}
-
-function runCommand(args: string): { output: string; isError?: boolean } {
-  const parts = parseArgs(args.trim());
-  if (parts.length === 0) {
-    return {
-      output: `tasks - A simple task manager
-
-Commands:
-  tasks add <task>     Add a new task
-  tasks list [--all]   List tasks
-  tasks toggle <id>    Toggle done status
-  tasks clear          Clear all tasks`,
-    };
-  }
-
-  const [cmd, ...rest] = parts;
-
-  switch (cmd) {
-    case "add": {
-      const text = rest.join(" ").replace(/^["']|["']$/g, "");
-      if (!text) return { output: "Usage: tasks add <task>", isError: true };
-      const tasks = loadTasks();
-      const id = getNextId(tasks);
-      tasks.push({ id, text, done: false });
-      saveTasks(tasks);
-      return { output: `Added task #${id}: ${text}` };
-    }
-
-    case "list": {
-      const showAll = rest.includes("--all") || rest.includes("-a");
-      const tasks = loadTasks();
-      const filtered = showAll ? tasks : tasks.filter((t) => !t.done);
-      if (filtered.length === 0) return { output: "No tasks." };
-      return {
-        output: filtered
-          .map((t) => `${t.done ? "[x]" : "[ ]"} #${t.id} ${t.text}`)
-          .join("\n"),
-      };
-    }
-
-    case "toggle": {
-      const idStr = rest[0];
-      if (!idStr) return { output: "Usage: tasks toggle <id>", isError: true };
-      const id = Number.parseInt(idStr, 10);
-      if (Number.isNaN(id))
-        return { output: "Usage: tasks toggle <id>", isError: true };
-      const tasks = loadTasks();
-      const task = tasks.find((t) => t.id === id);
-      if (!task) return { output: `Task #${id} not found`, isError: true };
-      task.done = !task.done;
-      saveTasks(tasks);
-      return {
-        output: `Toggled: ${task.text} (${task.done ? "done" : "pending"})`,
-      };
-    }
-
-    case "clear": {
-      saveTasks([]);
-      return { output: "Cleared all tasks." };
-    }
-
-    case "--help":
-      return {
-        output: `tasks - A simple task manager
-
-Commands:
-  tasks add <task>     Add a new task
-  tasks list [--all]   List tasks (--all includes completed)
-  tasks toggle <id>    Toggle task done/pending
-  tasks clear          Clear all tasks`,
-      };
-
-    default:
-      return {
-        output: `Unknown command: tasks ${cmd}\nTry: tasks --help`,
-        isError: true,
-      };
-  }
-}
-
-function parseArgs(input: string): string[] {
-  const args: string[] = [];
-  let current = "";
-  let inQuote: string | null = null;
-
-  for (const char of input) {
-    if (inQuote) {
-      if (char === inQuote) {
-        inQuote = null;
-      } else {
-        current += char;
-      }
-    } else if (char === '"' || char === "'") {
-      inQuote = char;
-    } else if (char === " ") {
-      if (current) {
-        args.push(current);
-        current = "";
-      }
-    } else {
-      current += char;
-    }
-  }
-  if (current) args.push(current);
-  return args;
-}
-
-// Find word boundary for Option+Arrow navigation
 function findWordBoundary(
   text: string,
   pos: number,
@@ -198,25 +479,24 @@ function findWordBoundary(
   if (direction === "left") {
     if (pos === 0) return 0;
     let i = pos - 1;
-    // Skip spaces
     while (i > 0 && text[i] === " ") i--;
-    // Skip word characters
     while (i > 0 && text[i - 1] !== " ") i--;
     return i;
-  } else {
-    if (pos >= text.length) return text.length;
-    let i = pos;
-    // Skip current word
-    while (i < text.length && text[i] !== " ") i++;
-    // Skip spaces
-    while (i < text.length && text[i] === " ") i++;
-    return i;
   }
+  if (pos >= text.length) return text.length;
+  let i = pos;
+  while (i < text.length && text[i] !== " ") i++;
+  while (i < text.length && text[i] === " ") i++;
+  return i;
 }
 
 const blinkStyle = {
   animation: "blink 1s step-end infinite",
 } as const;
+
+// =============================================================================
+// Component
+// =============================================================================
 
 export function TerminalDemo() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -226,6 +506,7 @@ export function TerminalDemo() {
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [hintIndex, setHintIndex] = useState(0);
   const [blinkKey, setBlinkKey] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const outputRef = useRef<HTMLDivElement>(null);
 
@@ -237,7 +518,6 @@ export function TerminalDemo() {
     return () => clearInterval(interval);
   }, []);
 
-  // Sync cursor position from input
   const syncCursor = useCallback(() => {
     if (inputRef.current) {
       setCursorPos(inputRef.current.selectionStart ?? input.length);
@@ -249,19 +529,32 @@ export function TerminalDemo() {
   }, []);
 
   const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
+    async (e: React.FormEvent) => {
       e.preventDefault();
+      if (isRunning) return;
+
       const fullCommand = `tasks ${input}`.trim();
-      const result = runCommand(input);
-      setHistory((h) => [...h, { input: fullCommand, ...result }]);
+      setIsRunning(true);
+
+      try {
+        const result = await runCliCommand(input);
+        setHistory((h) => [...h, { input: fullCommand, ...result }]);
+      } catch (err) {
+        setHistory((h) => [
+          ...h,
+          { input: fullCommand, output: String(err), isError: true },
+        ]);
+      }
+
       if (input.trim()) {
         setCommandHistory((h) => [...h, input]);
       }
       setHistoryIndex(-1);
       setInput("");
       setCursorPos(0);
+      setIsRunning(false);
     },
-    [input],
+    [input, isRunning],
   );
 
   const cursorAtEnd = cursorPos >= input.length;
@@ -272,7 +565,6 @@ export function TerminalDemo() {
       const inp = inputRef.current;
       if (!inp) return;
 
-      // Ctrl+C - cancel
       if (e.ctrlKey && e.key === "c") {
         e.preventDefault();
         if (input) {
@@ -283,13 +575,11 @@ export function TerminalDemo() {
         resetBlink();
         return;
       }
-      // Ctrl+L - clear screen
       if (e.ctrlKey && e.key === "l") {
         e.preventDefault();
         setHistory([]);
         return;
       }
-      // Ctrl+A - go to beginning
       if (e.ctrlKey && e.key === "a") {
         e.preventDefault();
         inp.setSelectionRange(0, 0);
@@ -297,7 +587,6 @@ export function TerminalDemo() {
         resetBlink();
         return;
       }
-      // Ctrl+E - go to end
       if (e.ctrlKey && e.key === "e") {
         e.preventDefault();
         inp.setSelectionRange(input.length, input.length);
@@ -305,7 +594,6 @@ export function TerminalDemo() {
         resetBlink();
         return;
       }
-      // Ctrl+W - delete word backward
       if (e.ctrlKey && e.key === "w") {
         e.preventDefault();
         const pos = inp.selectionStart ?? input.length;
@@ -317,7 +605,6 @@ export function TerminalDemo() {
         resetBlink();
         return;
       }
-      // Ctrl+U - delete to beginning
       if (e.ctrlKey && e.key === "u") {
         e.preventDefault();
         const pos = inp.selectionStart ?? input.length;
@@ -328,7 +615,6 @@ export function TerminalDemo() {
         resetBlink();
         return;
       }
-      // Ctrl+K - delete to end
       if (e.ctrlKey && e.key === "k") {
         e.preventDefault();
         const pos = inp.selectionStart ?? input.length;
@@ -336,7 +622,6 @@ export function TerminalDemo() {
         resetBlink();
         return;
       }
-      // Cmd+Backspace - delete entire line
       if (e.metaKey && e.key === "Backspace") {
         e.preventDefault();
         setInput("");
@@ -344,7 +629,6 @@ export function TerminalDemo() {
         resetBlink();
         return;
       }
-      // Option+Backspace - delete word backward
       if (e.altKey && e.key === "Backspace") {
         e.preventDefault();
         const pos = inp.selectionStart ?? input.length;
@@ -356,7 +640,6 @@ export function TerminalDemo() {
         resetBlink();
         return;
       }
-      // Option+Left - word jump left
       if (e.altKey && e.key === "ArrowLeft") {
         e.preventDefault();
         const pos = inp.selectionStart ?? 0;
@@ -366,7 +649,6 @@ export function TerminalDemo() {
         resetBlink();
         return;
       }
-      // Option+Right - word jump right
       if (e.altKey && e.key === "ArrowRight") {
         e.preventDefault();
         const pos = inp.selectionStart ?? input.length;
@@ -376,7 +658,6 @@ export function TerminalDemo() {
         resetBlink();
         return;
       }
-      // Cmd+Left - go to beginning
       if (e.metaKey && e.key === "ArrowLeft") {
         e.preventDefault();
         inp.setSelectionRange(0, 0);
@@ -384,7 +665,6 @@ export function TerminalDemo() {
         resetBlink();
         return;
       }
-      // Cmd+Right - go to end
       if (e.metaKey && e.key === "ArrowRight") {
         e.preventDefault();
         inp.setSelectionRange(input.length, input.length);
@@ -392,7 +672,6 @@ export function TerminalDemo() {
         resetBlink();
         return;
       }
-      // Tab - accept autocomplete
       if (e.key === "Tab") {
         e.preventDefault();
         if (autocomplete) {
@@ -407,7 +686,6 @@ export function TerminalDemo() {
         resetBlink();
         return;
       }
-      // Arrow Up - previous command in history
       if (e.key === "ArrowUp") {
         e.preventDefault();
         const newIndex = historyIndex + 1;
@@ -421,7 +699,6 @@ export function TerminalDemo() {
         resetBlink();
         return;
       }
-      // Arrow Down - next command in history
       if (e.key === "ArrowDown") {
         e.preventDefault();
         const newIndex = historyIndex - 1;
@@ -439,13 +716,11 @@ export function TerminalDemo() {
         resetBlink();
         return;
       }
-      // Arrow Left/Right - let default behavior work, then sync
       if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
         resetBlink();
         setTimeout(syncCursor, 0);
         return;
       }
-      // Any other key - reset blink
       resetBlink();
     },
     [historyIndex, commandHistory, input, autocomplete, syncCursor, resetBlink],
@@ -459,7 +734,6 @@ export function TerminalDemo() {
     [syncCursor],
   );
 
-  // Also sync on click (user might click to position cursor)
   const handleInputClick = useCallback(() => {
     syncCursor();
     setBlinkKey((k) => k + 1);
@@ -469,10 +743,17 @@ export function TerminalDemo() {
     if (outputRef.current) {
       outputRef.current.scrollTop = outputRef.current.scrollHeight;
     }
-  }, []);
+  }, [history]);
 
   const handleContainerClick = useCallback(() => {
     inputRef.current?.focus();
+  }, []);
+
+  const handleReset = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setHistory([]);
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(INITIALIZED_KEY);
   }, []);
 
   const beforeCursor = input.slice(0, cursorPos);
@@ -490,11 +771,7 @@ export function TerminalDemo() {
           <span className="text-neutral-500">Task Manager</span>
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setHistory([]);
-              saveTasks([]);
-            }}
+            onClick={handleReset}
             className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors"
           >
             Reset
@@ -571,6 +848,7 @@ export function TerminalDemo() {
               className="absolute inset-0 opacity-0 w-full cursor-text"
               autoComplete="off"
               spellCheck={false}
+              disabled={isRunning}
             />
           </form>
         </div>
