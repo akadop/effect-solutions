@@ -248,89 +248,6 @@ Benefits:
 
 See [Testing with Vitest](/testing-with-vitest#worked-example-testing-a-service) for a complete worked example testing this `Events` service with test layers.
 
-## Sharing Layers in Tests with `it.layer`
-
-**Default recommendation:** give each test its own layer (provide inside every `it.effect`) so state never leaks. Reach for `it.layer` only when you intentionally want a shared, expensive resource across the suite and are confident tests won't interfere with each other.
-
-`it.layer` constructs a layer once for the entire suite and tears it down after all tests complete. This is useful for expensive resources like database connections; you pay the setup cost once rather than per-test. Since all tests share the same instance, state can leak between tests.
-
-Per-test layering (preferred):
-
-```typescript
-import { expect, it } from "@effect/vitest"
-import { Context, Effect, Layer } from "effect"
-
-class Counter extends Context.Tag("@app/Counter")<
-  Counter,
-  { readonly get: () => Effect.Effect<number>; readonly increment: () => Effect.Effect<void> }
->() {
-  static readonly layer = Layer.sync(Counter, () => {
-    let count = 0
-    return {
-      get: () => Effect.succeed(count),
-      increment: () => Effect.sync(() => void count++),
-    }
-  })
-}
-
-// Each test provides the layer, so each gets its own fresh counter
-it.effect("starts at zero", () =>
-  Effect.gen(function* () {
-    const counter = yield* Counter
-    expect(yield* counter.get()).toBe(0)
-  }).pipe(Effect.provide(Counter.layer)),
-)
-
-it.effect("increments without leaking", () =>
-  Effect.gen(function* () {
-    const counter = yield* Counter
-    yield* counter.increment()
-    expect(yield* counter.get()).toBe(1)
-  }).pipe(Effect.provide(Counter.layer)),
-)
-```
-
-Suite-shared layering (only when you know you need it):
-
-```typescript
-import { expect, it } from "@effect/vitest"
-import { Context, Effect, Layer } from "effect"
-
-class Counter extends Context.Tag("@app/Counter")<
-  Counter,
-  {
-    readonly get: () => Effect.Effect<number>
-    readonly increment: () => Effect.Effect<void>
-  }
->() {
-  static readonly layer = Layer.sync(Counter, () => {
-    let count = 0
-    return {
-      get: () => Effect.succeed(count),
-      increment: () => Effect.sync(() => void count++),
-    }
-  })
-}
-
-it.layer(Counter.layer)("counter", (it) => {
-  it.effect("starts at zero", () =>
-    Effect.gen(function* () {
-      const counter = yield* Counter
-      expect(yield* counter.get()).toBe(0)
-    })
-  )
-
-  it.effect("increments", () =>
-    Effect.gen(function* () {
-      const counter = yield* Counter
-      yield* counter.increment()
-      // State persists: the first test already ran, so count was 0, now it's 1
-      expect(yield* counter.get()).toBe(1)
-    })
-  )
-})
-```
-
 ## Test Implementations
 
 When designing with services first, create lightweight test implementations. Use `Effect.sync` or `Effect.succeed` when your test doesn't need async operations or effects.
@@ -486,3 +403,86 @@ const goodAppLayer = Layer.merge(
 Effect also provides [`Effect.Service`](https://effect.website/blog/releases/effect/39/#effectservice), which bundles a Tag and default Layer together. It's useful when you have an obvious default implementation.
 
 We focus on `Context.Tag` here because it supports service-driven development: sketching interfaces before implementations. A future Effect version aims to combine both approaches.
+
+## Sharing Layers Between Tests
+
+By default, provide a fresh layer inside each `it.effect` so state never leaks between tests. Use `it.layer` only when you need to share an expensive resource—like a database connection—across an entire suite.
+
+`it.layer` constructs the layer once before any tests run and tears it down after all tests complete. This avoids repeated setup costs, but since all tests share the same instance, state can leak between them.
+
+Per-test layering (preferred):
+
+```typescript
+import { expect, it } from "@effect/vitest"
+import { Context, Effect, Layer } from "effect"
+
+class Counter extends Context.Tag("@app/Counter")<
+  Counter,
+  { readonly get: () => Effect.Effect<number>; readonly increment: () => Effect.Effect<void> }
+>() {
+  static readonly layer = Layer.sync(Counter, () => {
+    let count = 0
+    return {
+      get: () => Effect.succeed(count),
+      increment: () => Effect.sync(() => void count++),
+    }
+  })
+}
+
+// Each test provides the layer, so each gets its own fresh counter
+it.effect("starts at zero", () =>
+  Effect.gen(function* () {
+    const counter = yield* Counter
+    expect(yield* counter.get()).toBe(0)
+  }).pipe(Effect.provide(Counter.layer)),
+)
+
+it.effect("increments without leaking", () =>
+  Effect.gen(function* () {
+    const counter = yield* Counter
+    yield* counter.increment()
+    expect(yield* counter.get()).toBe(1)
+  }).pipe(Effect.provide(Counter.layer)),
+)
+```
+
+Suite-shared layering (only when you know you need it):
+
+```typescript
+import { expect, it } from "@effect/vitest"
+import { Context, Effect, Layer } from "effect"
+
+class Counter extends Context.Tag("@app/Counter")<
+  Counter,
+  {
+    readonly get: () => Effect.Effect<number>
+    readonly increment: () => Effect.Effect<void>
+  }
+>() {
+  static readonly layer = Layer.sync(Counter, () => {
+    let count = 0
+    return {
+      get: () => Effect.succeed(count),
+      increment: () => Effect.sync(() => void count++),
+    }
+  })
+}
+
+it.layer(Counter.layer)("counter", (it) => {
+  it.effect("starts at zero", () =>
+    Effect.gen(function* () {
+      const counter = yield* Counter
+      expect(yield* counter.get()).toBe(0)
+    })
+  )
+
+  it.effect("increments", () =>
+    Effect.gen(function* () {
+      const counter = yield* Counter
+      yield* counter.increment()
+      // State persists: the first test already ran, so count was 0, now it's 1
+      expect(yield* counter.get()).toBe(1)
+    })
+  )
+})
+```
