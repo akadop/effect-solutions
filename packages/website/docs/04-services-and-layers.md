@@ -246,6 +246,8 @@ Benefits:
 - Type-checks immediately even though leaf services aren't implemented yet.
 - Adding production implementations later doesn't change Events code.
 
+See [Testing with Vitest](/testing-with-vitest#worked-example-testing-a-service) for a complete worked example testing this `Events` service with test layers.
+
 ## Sharing Layers in Tests with `it.layer`
 
 `it.layer` constructs a layer once for the entire suite and tears it down after all tests complete. This is useful for expensive resources like database connections; you pay the setup cost once rather than per-test.
@@ -263,7 +265,7 @@ class Counter extends Context.Tag("@app/Counter")<
     readonly increment: () => Effect.Effect<void>
   }
 >() {
-  static readonly Live = Layer.sync(Counter, () => {
+  static readonly layer = Layer.sync(Counter, () => {
     let count = 0
     return {
       get: () => Effect.succeed(count),
@@ -272,7 +274,7 @@ class Counter extends Context.Tag("@app/Counter")<
   })
 }
 
-it.layer(Counter.Live)("counter", (it) => {
+it.layer(Counter.layer)("counter", (it) => {
   it.effect("starts at zero", () =>
     Effect.gen(function* () {
       const counter = yield* Counter
@@ -290,8 +292,6 @@ it.layer(Counter.Live)("counter", (it) => {
   )
 })
 ```
-
-See [Testing with Vitest](/testing-with-vitest#worked-example-testing-a-service) for a complete worked example testing this `Events` service with test layers.
 
 ## Test Implementations
 
