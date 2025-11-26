@@ -1,18 +1,28 @@
 /// <reference types="node" />
 
-import { spawn } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import type { Browser } from "playwright";
+import type { Browser as PlaywrightBrowser } from "playwright";
 import { chromium } from "playwright";
 
+import { Console, Context, Effect, Layer, Option, pipe } from "effect";
 import { getAllDocs } from "../src/lib/mdx";
+
+// =============================================================================
+// Configuration
+// =============================================================================
 
 const VIEWPORT = { width: 1200, height: 630 };
 const DEFAULT_DEVICE_SCALE = Number(process.env.OG_DEVICE_SCALE ?? 2);
+const DEFAULT_CONCURRENCY = Number(process.env.OG_CONCURRENCY ?? 5);
 const OUTPUT_DIR = path.join(process.cwd(), "public", "og");
 const NEXT_CACHE_DIR = path.join(process.cwd(), ".next-og");
 const TEMPLATE_ROUTE = "/og/template";
+
+// =============================================================================
+// Types
+// =============================================================================
 
 interface TemplateFields {
   slug: string;
@@ -21,7 +31,36 @@ interface TemplateFields {
   background?: string;
 }
 
-function buildDocSpecs(): TemplateFields[] {
+interface TemplateServerHandle {
+  baseUrl: string;
+  close: Effect.Effect<void>;
+}
+
+// =============================================================================
+// Browser Service
+// =============================================================================
+
+class Browser extends Context.Tag("Browser")<Browser, PlaywrightBrowser>() {
+  static layer = Layer.scoped(
+    Browser,
+    Effect.acquireRelease(
+      Effect.tryPromise({
+        try: () => chromium.launch(),
+        catch: (error) => new Error(`Failed to launch browser: ${error}`),
+      }),
+      (browser) =>
+        Effect.promise(() => browser.close()).pipe(
+          Effect.tap(() => Console.log("Browser closed")),
+        ),
+    ),
+  );
+}
+
+// =============================================================================
+// Spec Building
+// =============================================================================
+
+const buildDocSpecs = (): TemplateFields[] => {
   const docs = getAllDocs();
   const docSpecs = docs.map((doc) => ({
     slug: doc.slug,
@@ -30,7 +69,6 @@ function buildDocSpecs(): TemplateFields[] {
       doc.description ?? "Best practices for applying Effect in production.",
   }));
 
-  // Add home page spec
   const homeSpec: TemplateFields = {
     slug: "home",
     title: "Effect Solutions",
@@ -38,133 +76,163 @@ function buildDocSpecs(): TemplateFields[] {
   };
 
   return [homeSpec, ...docSpecs];
-}
+};
 
-function dedupeSpecs(specs: TemplateFields[]): TemplateFields[] {
-  const seen = new Set<string>();
-  const unique: TemplateFields[] = [];
+const dedupeSpecs = (specs: TemplateFields[]) =>
+  Effect.gen(function* () {
+    const seen = new Set<string>();
+    const unique: TemplateFields[] = [];
 
-  for (const spec of specs) {
-    if (seen.has(spec.slug)) {
-      console.warn(`Skipping duplicate OG slug: ${spec.slug}`);
-      continue;
+    for (const spec of specs) {
+      if (seen.has(spec.slug)) {
+        yield* Console.warn(`Skipping duplicate OG slug: ${spec.slug}`);
+        continue;
+      }
+      seen.add(spec.slug);
+      unique.push(spec);
     }
-    seen.add(spec.slug);
-    unique.push(spec);
-  }
 
-  return unique;
-}
+    return unique;
+  });
 
-function pickSpecs(): TemplateFields[] {
+const pickSpecs = Effect.gen(function* () {
   const only = (process.env.OG_ONLY ?? "")
     .split(",")
     .map((slug) => slug.trim())
     .filter(Boolean);
 
-  const specs = dedupeSpecs(buildDocSpecs());
+  const specs = yield* dedupeSpecs(buildDocSpecs());
+
   if (only.length === 0) {
     return specs;
   }
 
   const filtered = specs.filter((spec) => only.includes(spec.slug));
   if (filtered.length === 0) {
-    console.warn(
+    yield* Console.warn(
       `No OG specs matched OG_ONLY filter (${only.join(", ")}). Falling back to complete set.`,
     );
     return specs;
   }
 
   return filtered;
-}
+});
 
-async function captureSpec(
-  browser: Browser,
-  spec: TemplateFields,
-  baseUrl: string,
-): Promise<void> {
-  const page = await browser.newPage({
-    viewport: VIEWPORT,
-    deviceScaleFactor: DEFAULT_DEVICE_SCALE,
+// =============================================================================
+// Screenshot Capture
+// =============================================================================
+
+const captureSpec = (spec: TemplateFields, baseUrl: string) =>
+  Effect.gen(function* () {
+    const browser = yield* Browser;
+
+    const page = yield* Effect.tryPromise(() =>
+      browser.newPage({
+        viewport: VIEWPORT,
+        deviceScaleFactor: DEFAULT_DEVICE_SCALE,
+      }),
+    );
+
+    yield* Effect.acquireRelease(
+      Effect.succeed(page),
+      (p) => Effect.promise(() => p.close()),
+    ).pipe(
+      Effect.flatMap((page) =>
+        Effect.gen(function* () {
+          const templateURL = new URL(TEMPLATE_ROUTE, baseUrl);
+          const params = templateURL.searchParams;
+          params.delete("slug");
+
+          for (const [key, value] of Object.entries(spec)) {
+            if (key !== "slug" && value) {
+              params.set(key, value);
+            }
+          }
+
+          yield* Effect.tryPromise(() =>
+            page.goto(templateURL.toString(), { waitUntil: "load" }),
+          );
+
+          const filePath = path.join(OUTPUT_DIR, `${spec.slug}.png`);
+          yield* Effect.tryPromise(() =>
+            page.screenshot({ path: filePath, type: "png" }),
+          );
+
+          yield* Console.log(
+            `OG image generated: ${path.relative(process.cwd(), filePath)}`,
+          );
+        }),
+      ),
+      Effect.scoped,
+    );
   });
 
-  const templateURL = new URL(TEMPLATE_ROUTE, baseUrl);
-  const params = templateURL.searchParams;
-  params.delete("slug");
+// =============================================================================
+// Server Management
+// =============================================================================
 
-  (Object.entries(spec) as [keyof TemplateFields, string | undefined][]) // enforce tuple type
-    .forEach(([key, value]) => {
-      if (key === "slug" || !value) {
+const isServerReachable = (url: string, timeoutMs = 2_000) =>
+  Effect.tryPromise({
+    try: async () => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const res = await fetch(url, { signal: controller.signal });
+        return res.ok;
+      } finally {
+        clearTimeout(timer);
+      }
+    },
+    catch: () => false,
+  }).pipe(Effect.catchAll(() => Effect.succeed(false)));
+
+const findExistingDevServer = Effect.gen(function* () {
+  const candidates = [
+    process.env.NEXT_DEFAULT_DEV_BASE_URL,
+    "http://127.0.0.1:3000",
+    "http://localhost:3000",
+  ].filter((value): value is string => Boolean(value));
+
+  for (const candidate of candidates) {
+    const url = new URL(TEMPLATE_ROUTE, candidate).toString();
+    const reachable = yield* isServerReachable(url, 1_000);
+    if (reachable) {
+      return Option.some(candidate.replace(/\/$/, ""));
+    }
+  }
+
+  return Option.none();
+});
+
+const waitForServer = (url: string, timeoutMs = 45_000) =>
+  Effect.gen(function* () {
+    const start = Date.now();
+
+    while (Date.now() - start < timeoutMs) {
+      const reachable = yield* isServerReachable(url);
+      if (reachable) {
         return;
       }
-      params.set(key, value);
-    });
+      yield* Effect.sleep(500);
+    }
 
-  await page.goto(templateURL.toString(), {
-    waitUntil: "load",
+    yield* Effect.fail(
+      new Error(`Timed out waiting for Next.js dev server at ${url}`),
+    );
   });
 
-  const filePath = path.join(OUTPUT_DIR, `${spec.slug}.png`);
-  await page.screenshot({ path: filePath, type: "png" });
-  await page.close();
-  console.log(`OG image generated: ${path.relative(process.cwd(), filePath)}`);
-}
-
-async function main() {
-  fs.mkdirSync(OUTPUT_DIR, { recursive: true });
-
-  const specs = pickSpecs();
-  if (specs.length === 0) {
-    console.warn("No OG specs detected. Nothing to do.");
-    return;
-  }
-
-  const templateServer = await ensureTemplateServer();
-  console.log(
-    `Using OG template at ${new URL(TEMPLATE_ROUTE, templateServer.baseUrl).toString()}`,
-  );
-
-  console.log(`Generating ${specs.length} OG image(s)...`);
-
-  const browser = await chromium.launch();
-  try {
-    for (const spec of specs) {
-      await captureSpec(browser, spec, templateServer.baseUrl);
-    }
-  } finally {
-    await browser.close();
-    await templateServer.close?.();
-  }
-
-  console.log("OG generation complete.");
-}
-
-type TemplateServerHandle = {
-  baseUrl: string;
-  close?: () => Promise<void>;
-};
-
-async function ensureTemplateServer(): Promise<TemplateServerHandle> {
-  const explicit = process.env.OG_BASE_URL;
-  if (explicit) {
-    return { baseUrl: explicit.trim().replace(/\/$/, "") };
-  }
-
-  const reusableBase = await findExistingDevServer();
-  if (reusableBase) {
-    console.log(`Reusing existing dev server at ${reusableBase}`);
-    return { baseUrl: reusableBase };
-  }
-
+const startDevServer = Effect.gen(function* () {
   const port = Number(process.env.OG_SERVER_PORT ?? 4311);
-  console.log(
+  yield* Console.log(
     `Starting temporary Next.js server for OG template on http://127.0.0.1:${port}...`,
   );
 
-  fs.rmSync(NEXT_CACHE_DIR, { recursive: true, force: true });
+  yield* Effect.sync(() =>
+    fs.rmSync(NEXT_CACHE_DIR, { recursive: true, force: true }),
+  );
   const distDir = path.join(process.cwd(), `.next-og-dist-${Date.now()}`);
 
-  const child = spawn(
+  const child: ChildProcess = spawn(
     "bunx",
     ["next", "dev", "--hostname", "127.0.0.1", "--port", String(port)],
     {
@@ -187,88 +255,107 @@ async function ensureTemplateServer(): Promise<TemplateServerHandle> {
   });
 
   const baseUrl = `http://127.0.0.1:${port}`;
-  const readyPromise = waitForServer(
-    new URL(TEMPLATE_ROUTE, baseUrl).toString(),
+
+  // Wait for server to be ready, racing against early exit
+  yield* Effect.raceFirst(
+    waitForServer(new URL(TEMPLATE_ROUTE, baseUrl).toString()),
+    Effect.async<never, Error>((resume) => {
+      child.once("exit", (code) => {
+        resume(
+          Effect.fail(
+            new Error(`Next dev server exited early (code ${code ?? "null"})`),
+          ),
+        );
+      });
+    }),
   );
-  const exitPromise = new Promise<never>((_, reject) => {
-    child.once("exit", (code) => {
-      reject(
-        new Error(`Next dev server exited early (code ${code ?? "null"})`),
-      );
-    });
-  });
 
-  await Promise.race([readyPromise, exitPromise]);
-  await readyPromise;
-
-  return {
+  const handle: TemplateServerHandle = {
     baseUrl,
-    close: async () => {
+    close: Effect.gen(function* () {
       if (!child.killed) {
         child.kill("SIGTERM");
       }
-      await new Promise<void>((resolve) => {
-        child.once("exit", () => resolve());
+      yield* Effect.async<void>((resume) => {
+        child.once("exit", () => resume(Effect.succeed(undefined)));
       });
-      fs.rmSync(NEXT_CACHE_DIR, { recursive: true, force: true });
-      fs.rmSync(distDir, { recursive: true, force: true });
-    },
-  } satisfies TemplateServerHandle;
-}
+      yield* Effect.sync(() => {
+        fs.rmSync(NEXT_CACHE_DIR, { recursive: true, force: true });
+        fs.rmSync(distDir, { recursive: true, force: true });
+      });
+    }),
+  };
 
-async function waitForServer(url: string, timeoutMs = 45_000) {
-  const start = Date.now();
-
-  while (Date.now() - start < timeoutMs) {
-    try {
-      const response = await fetch(url);
-      if (response.ok) {
-        return;
-      }
-    } catch {
-      // Ignore until timeout
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 500));
-  }
-
-  throw new Error(`Timed out waiting for Next.js dev server at ${url}`);
-}
-
-async function findExistingDevServer(): Promise<string | null> {
-  const candidates = [
-    process.env.NEXT_DEFAULT_DEV_BASE_URL,
-    "http://127.0.0.1:3000",
-    "http://localhost:3000",
-  ].filter((value): value is string => Boolean(value));
-
-  for (const candidate of candidates) {
-    if (
-      await isServerReachable(
-        new URL(TEMPLATE_ROUTE, candidate).toString(),
-        1_000,
-      )
-    ) {
-      return candidate.replace(/\/$/, "");
-    }
-  }
-
-  return null;
-}
-
-async function isServerReachable(url: string, timeoutMs = 2_000) {
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    const res = await fetch(url, { signal: controller.signal });
-    clearTimeout(timer);
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
-
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
+  return handle;
 });
+
+const ensureTemplateServer = Effect.gen(function* () {
+  // Check for explicit base URL
+  const explicit = process.env.OG_BASE_URL;
+  if (explicit) {
+    return {
+      baseUrl: explicit.trim().replace(/\/$/, ""),
+      close: Effect.void,
+    } satisfies TemplateServerHandle;
+  }
+
+  // Check for existing dev server
+  const existing = yield* findExistingDevServer;
+  if (Option.isSome(existing)) {
+    yield* Console.log(`Reusing existing dev server at ${existing.value}`);
+    return {
+      baseUrl: existing.value,
+      close: Effect.void,
+    } satisfies TemplateServerHandle;
+  }
+
+  // Start a new dev server
+  return yield* startDevServer;
+});
+
+// =============================================================================
+// Main Program
+// =============================================================================
+
+const program = Effect.gen(function* () {
+  yield* Effect.sync(() => fs.mkdirSync(OUTPUT_DIR, { recursive: true }));
+
+  const specs = yield* pickSpecs;
+  if (specs.length === 0) {
+    yield* Console.warn("No OG specs detected. Nothing to do.");
+    return;
+  }
+
+  const server = yield* ensureTemplateServer;
+  yield* Console.log(
+    `Using OG template at ${new URL(TEMPLATE_ROUTE, server.baseUrl).toString()}`,
+  );
+
+  yield* Console.log(
+    `Generating ${specs.length} OG image(s) with concurrency ${DEFAULT_CONCURRENCY}...`,
+  );
+
+  yield* Effect.forEach(
+    specs,
+    (spec) => captureSpec(spec, server.baseUrl),
+    { concurrency: DEFAULT_CONCURRENCY },
+  );
+
+  yield* server.close;
+  yield* Console.log("OG generation complete.");
+});
+
+// =============================================================================
+// Run
+// =============================================================================
+
+pipe(
+  program,
+  Effect.provide(Browser.layer),
+  Effect.catchAll((error) =>
+    Console.error(`Error: ${error}`).pipe(
+      Effect.flatMap(() => Effect.sync(() => process.exit(1))),
+    ),
+  ),
+  Effect.runPromise,
+);
