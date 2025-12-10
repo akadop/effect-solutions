@@ -199,7 +199,7 @@ const openIssueCommand = Command.make("open-issue", {
 
 export const cli = Command.make(CLI_NAME).pipe(
   Command.withDescription(
-    "Effect Solutions CLI - Browse and search Effect best practices documentation. " +
+    "Effect Solutions CLI - Browse Effect best practices documentation. " +
       "Built for both humans and AI agents to quickly access Effect patterns, setup guides, and configuration examples.",
   ),
   Command.withSubcommands([listCommand, showCommand, openIssueCommand]),

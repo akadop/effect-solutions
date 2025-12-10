@@ -16,7 +16,7 @@ Curated Effect TypeScript patterns for common scenarios — error handling, serv
 ```bash
 bunx effect-solutions list              # List all topics
 bunx effect-solutions show http-clients # Show specific topic
-bunx effect-solutions search error      # Search topics
+bunx effect-solutions open-issue        # Leave feedback
 ```
 
 ## Features

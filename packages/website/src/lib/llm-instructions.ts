@@ -112,7 +112,7 @@ The Effect Solutions CLI provides curated best practices and patterns for Effect
 
 - \`effect-solutions list\` - List all available topics
 - \`effect-solutions show <slug...>\` - Read one or more topics
-- \`effect-solutions search <term>\` - Search topics by keyword
+- \`effect-solutions open-issue\` - Leave Feedback
 \`\`\`
 
 ---
