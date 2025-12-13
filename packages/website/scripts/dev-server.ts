@@ -21,7 +21,9 @@ function startProcess(command: string[], name: string): ManagedProcess {
 const nextArgs = ["bun", "x", "next", "dev"];
 
 // Pass through port if specified via -p/--port or PORT env
-const portArgIndex = process.argv.findIndex((arg) => arg === "-p" || arg === "--port");
+const portArgIndex = process.argv.findIndex(
+  (arg) => arg === "-p" || arg === "--port",
+);
 if (portArgIndex !== -1 && process.argv[portArgIndex + 1]) {
   nextArgs.push("-p", process.argv[portArgIndex + 1]);
 } else if (process.env.PORT) {
