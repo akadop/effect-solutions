@@ -111,7 +111,7 @@ export function CodeCopyButton({ value, className }: CodeCopyButtonProps) {
       ref={buttonRef}
       type="button"
       className={cn(
-        "pointer-events-auto absolute top-3 right-3 flex items-center border border-neutral-700/80 bg-neutral-950/80 px-3 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-neutral-400 overflow-hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-500 hover:text-white hover:border-neutral-500",
+        "pointer-events-auto absolute top-3 right-3 flex items-center border border-neutral-700/80 bg-neutral-950/80 px-3 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-neutral-400 overflow-hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-500 hover:text-white hover:border-neutral-500 cursor-pointer",
         copied && "text-emerald-300 border-emerald-400/70",
         className,
       )}

@@ -112,7 +112,12 @@ export const __prelude = { Effect, Schema, Context, Layer, Config, ConfigError, 
         .toString()
         .padStart(3, "0")}.ts`;
       const header = `// ${block.file}:${block.startLine} (block ${block.blockNumber})`;
-      const content = [header, 'import "./prelude";', "export {};", ...block.lines].join("\n");
+      const content = [
+        header,
+        'import "./prelude";',
+        "export {};",
+        ...block.lines,
+      ].join("\n");
       return writeFile(join(TEMP_DIR, filename), content);
     }),
   );

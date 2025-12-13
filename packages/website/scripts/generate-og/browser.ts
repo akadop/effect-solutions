@@ -1,6 +1,6 @@
+import { Console, Context, Effect, Layer } from "effect";
 import type { Browser as PlaywrightBrowser } from "playwright";
 import { chromium } from "playwright";
-import { Console, Context, Effect, Layer } from "effect";
 
 // =============================================================================
 // Browser Service
@@ -26,4 +26,3 @@ export class Browser extends Context.Tag("Browser")<
 
   static test = Layer.succeed(Browser, null as unknown as PlaywrightBrowser);
 }
-

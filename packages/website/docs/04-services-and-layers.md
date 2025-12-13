@@ -406,7 +406,7 @@ We focus on `Context.Tag` here because it supports service-driven development: s
 
 ## Sharing Layers Between Tests
 
-By default, provide a fresh layer inside each `it.effect` so state never leaks between tests. Use `it.layer` only when you need to share an expensive resource—like a database connection—across an entire suite.
+By default, provide a fresh layer inside each `it.effect` so state never leaks between tests. Use `it.layer` only when you need to share an expensive resource—like a database connection—across an entire suite. If you're not sure, skip `it.layer`.
 
 `it.layer` constructs the layer once before any tests run and tears it down after all tests complete. This avoids repeated setup costs, but since all tests share the same instance, state can leak between them.
 

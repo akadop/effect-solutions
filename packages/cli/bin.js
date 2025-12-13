@@ -1,13 +1,15 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
-// Chooses the right precompiled binary for the current platform/arch.
-// Falls back to an error message telling the user how to proceed.
+// Dev mode: runs source directly via bun (for bun link workflow)
+// Production: uses prebuilt binaries (for npm installs)
 
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const srcPath = path.join(__dirname, "src", "cli.ts");
 const PLATFORM_ARCH = `${process.platform}-${process.arch}`;
 
 const TARGET_MAP = {
@@ -18,7 +20,15 @@ const TARGET_MAP = {
 };
 
 const binaryName = TARGET_MAP[PLATFORM_ARCH];
+const binPath = binaryName ? path.join(__dirname, "dist", binaryName) : null;
 
+// Dev mode: source exists and no prebuilt binary (or bun is available)
+if (fs.existsSync(srcPath) && (!binPath || !fs.existsSync(binPath))) {
+  await import("./src/cli.ts");
+  process.exit(0);
+}
+
+// Production mode: use prebuilt binary
 if (!binaryName) {
   console.error(
     `[effect-solutions] Unsupported platform: ${PLATFORM_ARCH}. ` +
@@ -26,9 +36,6 @@ if (!binaryName) {
   );
   process.exit(1);
 }
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const binPath = path.join(__dirname, "dist", binaryName);
 
 if (!fs.existsSync(binPath)) {
   console.error(

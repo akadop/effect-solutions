@@ -18,8 +18,18 @@ function startProcess(command: string[], name: string): ManagedProcess {
   return { name, process: child };
 }
 
+const nextArgs = ["bun", "x", "next", "dev"];
+
+// Pass through port if specified via -p/--port or PORT env
+const portArgIndex = process.argv.findIndex((arg) => arg === "-p" || arg === "--port");
+if (portArgIndex !== -1 && process.argv[portArgIndex + 1]) {
+  nextArgs.push("-p", process.argv[portArgIndex + 1]);
+} else if (process.env.PORT) {
+  nextArgs.push("-p", process.env.PORT);
+}
+
 const processes: ManagedProcess[] = [
-  startProcess(["bun", "x", "next", "dev"], "next"),
+  startProcess(nextArgs, "next"),
   startProcess(["bun", "./scripts/content-watcher.ts"], "watcher"),
 ];
 

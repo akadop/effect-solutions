@@ -1,7 +1,12 @@
 import path from "node:path";
 import { Console, Effect } from "effect";
 import { Browser } from "./browser.js";
-import { DEVICE_SCALE, OUTPUT_DIR, TEMPLATE_ROUTE, VIEWPORT } from "./config.js";
+import {
+  DEVICE_SCALE,
+  OUTPUT_DIR,
+  TEMPLATE_ROUTE,
+  VIEWPORT,
+} from "./config.js";
 import type { TemplateFields } from "./spec.js";
 import { TemplateServer } from "./template-server.js";
 

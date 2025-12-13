@@ -200,11 +200,12 @@ Effect-based CLI using:
 
 
 <!-- effect-solutions:start -->
-## Effect Solutions Usage
+## Effect Best Practices
 
-The Effect Solutions CLI provides curated best practices and patterns for Effect TypeScript. Before working on Effect code, check if there's a relevant topic that covers your use case. For new Effect projects, follow the setup steps in the quick-start guide.
+**Before implementing Effect features**, run `effect-solutions list` and read the relevant guide.
 
-- `effect-solutions list` - List all available topics
-- `effect-solutions show <slug...>` - Read one or more topics
-- `effect-solutions open-issue` - Leave feedback
+Topics include: services and layers, data modeling, error handling, configuration, testing, HTTP clients, CLIs, observability, and project structure.
+
+**Effect Source Reference:** `~/.local/share/effect-solutions/effect`
+Search here for real implementations when docs aren't enough.
 <!-- effect-solutions:end -->

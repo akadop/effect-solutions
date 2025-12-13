@@ -4,29 +4,20 @@ export function generateLLMInstructions(): string {
 ## **Tools**
 
 - **Todo list**: If available, use it to track progress. Create checklist at start, update as you complete steps. If no todo tool: show markdown checklist ONCE at start.
-- **AskUserQuestion**: If available (Claude agents have this), use for multiple choice questions: package manager, project type, interaction mode, etc.
+- **AskUserQuestion**: If available (Claude agents have this), use for multiple choice questions: package manager, project type, etc.
 
-## **Interaction Modes**
-
-Ask the user which mode they prefer:
-
-**Interactive mode:** Explain each step before doing it. Present specific changes before applying. Explain why settings matter.
-
-**Autonomous mode:** Execute steps automatically. Provide comprehensive summary at end. Skip explanations during execution.
-
-**Confirmations:** Always ask for confirmation before: initializing a project, installing packages, modifying tsconfig, or creating/modifying agent files.
+**Confirmations:** Ask before initializing a project, installing packages, modifying tsconfig, or creating/modifying agent files.
 
 ## **Before Starting**
 
 1. Introduce yourself as their Effect setup guide
-2. Ask which mode they prefer (interactive or autonomous)
-3. Assess repository with a single command:
+2. Assess repository with a single command:
    \`\`\`bash
    ls -la package.json tsconfig.json bun.lock pnpm-lock.yaml package-lock.json .vscode AGENTS.md CLAUDE.md .claude .cursorrules 2>/dev/null; file AGENTS.md CLAUDE.md 2>/dev/null | grep -i link
    \`\`\`
    This finds all relevant files and detects symlinks. From lock file, determine package manager (bun/pnpm/npm). If multiple lock files, ask which to use. If none, ask preference.
-4. Check Effect Solutions CLI: run \`effect-solutions list\`. If missing, install (using package name \`effect-solutions\`). If output shows update available, update before continuing.
-  5. Create todo list (if you have the tool)
+3. Check Effect Solutions CLI: run \`effect-solutions list\`. If missing, install (using package name \`effect-solutions\`). If output shows update available, update before continuing.
+4. Create todo list (if you have the tool)
 
 **Checklist:**
 - [ ] Initialize project (if needed)
@@ -106,13 +97,14 @@ These tell AI assistants about project tools.
 - Insert between \`<!-- effect-solutions:start -->\` and \`<!-- effect-solutions:end -->\`:
 
 \`\`\`markdown
-## Effect Solutions Usage
+## Effect Best Practices
 
-The Effect Solutions CLI provides curated best practices and patterns for Effect TypeScript. Before working on Effect code, check if there's a relevant topic that covers your use case.
+**Before implementing Effect features**, run \`effect-solutions list\` and read the relevant guide.
 
-- \`effect-solutions list\` - List all available topics
-- \`effect-solutions show <slug...>\` - Read one or more topics
-- \`effect-solutions open-issue\` - Leave Feedback
+Topics include: services and layers, data modeling, error handling, configuration, testing, HTTP clients, CLIs, observability, and project structure.
+
+**Effect Source Reference:** \`~/.local/share/effect-solutions/effect\`
+Search here for real implementations when docs aren't enough.
 \`\`\`
 
 ---
@@ -130,19 +122,11 @@ The Effect Solutions CLI provides curated best practices and patterns for Effect
 - Ask if they want to clone (provides local implementation examples and API details)
 - If yes: clone \`https://github.com/Effect-TS/effect.git\` to \`~/.local/share/effect-solutions/effect\`
 
-**After clone exists and is up to date:**
-Add to agent files between markers (after CLI commands):
-
-\`\`\`markdown
-**Local Effect Source:** The Effect repository is cloned to \`~/.local/share/effect-solutions/effect\` for reference. Use this to explore APIs, find usage examples, and understand implementation details when the documentation isn't enough.
-\`\`\`
-
 ---
 
 ## Summary
 
 Provide summary:
-- Mode used (interactive/autonomous)
 - Package manager
 - Steps completed vs skipped (with reasons)
 - Files created/modified

@@ -1,12 +1,20 @@
 import {
   Command,
-  CommandExecutor,
+  type CommandExecutor,
   FetchHttpClient,
   HttpClient,
   HttpClientRequest,
   HttpClientResponse,
 } from "@effect/platform";
-import { Console, Context, Effect, Layer, Option, Schedule, Stream } from "effect";
+import {
+  Console,
+  Context,
+  Effect,
+  Layer,
+  Option,
+  Schedule,
+  Stream,
+} from "effect";
 import {
   getBaseUrl,
   NEXT_CACHE_DIR,
@@ -66,7 +74,9 @@ const waitForServer = (url: string) =>
     Effect.retry(Schedule.spaced("500 millis")),
     Effect.timeout("45 seconds"),
     Effect.catchTag("TimeoutException", () =>
-      Effect.fail(new Error(`Timed out waiting for Next.js dev server at ${url}`)),
+      Effect.fail(
+        new Error(`Timed out waiting for Next.js dev server at ${url}`),
+      ),
     ),
   );
 

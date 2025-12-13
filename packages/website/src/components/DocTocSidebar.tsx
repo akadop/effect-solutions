@@ -266,6 +266,7 @@ export function DocTocSidebar({
     const gapHeight = 14; // px gap carved out of the spine
     const minDotPercent = (gapHeight / 2 / lineHeight) * 100;
     const maxDotPercent = 100 - minDotPercent;
+    const minSpacingPx = 20; // minimum pixels between item centers
 
     const renderItem = (
       id: string,
@@ -321,14 +322,41 @@ export function DocTocSidebar({
       );
     };
 
-    const allItems: React.ReactNode[] = [];
-
-    items.forEach((item) => {
-      const percent = clamp(
+    // Calculate raw positions first
+    const rawPositions = items.map((item) => ({
+      item,
+      percent: clamp(
         (item.offsetY / articleHeight) * 100,
         minDotPercent,
         maxDotPercent,
-      );
+      ),
+    }));
+
+    // Apply collision avoidance: push items down if they're too close
+    const adjustedPositions: { item: TocItem; percent: number }[] = [];
+    const minSpacingPercent = (minSpacingPx / lineHeight) * 100;
+
+    for (const pos of rawPositions) {
+      let adjustedPercent = pos.percent;
+
+      // Check against all previously placed items
+      for (const placed of adjustedPositions) {
+        const distance = adjustedPercent - placed.percent;
+        if (distance >= 0 && distance < minSpacingPercent) {
+          // Too close below a previous item; push down
+          adjustedPercent = placed.percent + minSpacingPercent;
+        }
+      }
+
+      // Clamp to max
+      adjustedPercent = Math.min(adjustedPercent, maxDotPercent);
+
+      adjustedPositions.push({ item: pos.item, percent: adjustedPercent });
+    }
+
+    const allItems: React.ReactNode[] = [];
+
+    for (const { item, percent } of adjustedPositions) {
       const isActive = activeId === item.id;
       allItems.push(
         renderItem(
@@ -339,7 +367,7 @@ export function DocTocSidebar({
           handleClick(item.id),
         ),
       );
-    });
+    }
 
     return allItems;
   }, [
