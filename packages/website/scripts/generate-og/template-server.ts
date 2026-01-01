@@ -1,3 +1,4 @@
+import net from "node:net";
 import {
   Command,
   type CommandExecutor,
@@ -6,21 +7,8 @@ import {
   HttpClientRequest,
   HttpClientResponse,
 } from "@effect/platform";
-import {
-  Console,
-  Context,
-  Effect,
-  Layer,
-  Option,
-  Schedule,
-  Stream,
-} from "effect";
-import {
-  getBaseUrl,
-  NEXT_CACHE_DIR,
-  SERVER_PORT,
-  TEMPLATE_ROUTE,
-} from "./config.js";
+import { Console, Context, Effect, Layer, Schedule, Stream } from "effect";
+import { getBaseUrl, NEXT_CACHE_DIR, TEMPLATE_ROUTE } from "./config.js";
 
 // =============================================================================
 // Server Handle
@@ -30,6 +18,21 @@ interface ServerHandle {
   baseUrl: string;
   process: CommandExecutor.Process | null;
 }
+
+// =============================================================================
+// Port Discovery
+// =============================================================================
+
+/** Find an available port by binding to port 0 */
+const getRandomPort = Effect.async<number>((resume) => {
+  const server = net.createServer();
+  server.listen(0, "localhost", () => {
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    server.close(() => resume(Effect.succeed(port)));
+  });
+  server.on("error", (err) => resume(Effect.fail(err)));
+});
 
 // =============================================================================
 // HTTP Helpers
@@ -42,28 +45,6 @@ const checkServer = (url: string) =>
     Effect.catchAll(() => Effect.succeed(false)),
     Effect.provide(FetchHttpClient.layer),
   );
-
-// =============================================================================
-// Server Discovery
-// =============================================================================
-
-const findExistingDevServer = Effect.gen(function* () {
-  const candidates = [
-    process.env.NEXT_DEFAULT_DEV_BASE_URL,
-    "http://127.0.0.1:3000",
-    "http://localhost:3000",
-  ].filter((value): value is string => Boolean(value));
-
-  for (const candidate of candidates) {
-    const url = new URL(TEMPLATE_ROUTE, candidate).toString();
-    const reachable = yield* checkServer(url).pipe(Effect.timeout("1 second"));
-    if (reachable) {
-      return Option.some(candidate.replace(/\/$/, ""));
-    }
-  }
-
-  return Option.none();
-});
 
 const waitForServer = (url: string) =>
   checkServer(url).pipe(
@@ -85,7 +66,8 @@ const waitForServer = (url: string) =>
 // =============================================================================
 
 const startDevServer = Effect.gen(function* () {
-  const baseUrl = `http://127.0.0.1:${SERVER_PORT}`;
+  const port = yield* getRandomPort;
+  const baseUrl = `http://localhost:${port}`;
 
   yield* Console.log(
     `Starting temporary Next.js server for OG template on ${baseUrl}...`,
@@ -98,7 +80,7 @@ const startDevServer = Effect.gen(function* () {
     "--hostname",
     "127.0.0.1",
     "--port",
-    String(SERVER_PORT),
+    String(port),
   ).pipe(
     Command.workingDirectory(process.cwd()),
     Command.env({
@@ -128,20 +110,13 @@ const startDevServer = Effect.gen(function* () {
 });
 
 const acquireServer = Effect.gen(function* () {
-  // Check for explicit base URL
+  // Check for explicit base URL override
   const explicitBaseUrl = getBaseUrl();
   if (explicitBaseUrl) {
     return { baseUrl: explicitBaseUrl, process: null } satisfies ServerHandle;
   }
 
-  // Check for existing dev server
-  const existing = yield* findExistingDevServer;
-  if (Option.isSome(existing)) {
-    yield* Console.log(`Reusing existing dev server at ${existing.value}`);
-    return { baseUrl: existing.value, process: null } satisfies ServerHandle;
-  }
-
-  // Start a new dev server
+  // Always start our own server on a random port to avoid cross-project contamination
   return yield* startDevServer;
 });
 
