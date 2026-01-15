@@ -1,16 +1,16 @@
-"use client";
+"use client"
 
-import { motion } from "motion/react";
+import { motion } from "motion/react"
 
 interface RainbowTextProps {
-  children: string;
+  children: string
 }
 
 export function RainbowText({ children }: RainbowTextProps) {
   const letters = children.split("").map((letter, index) => ({
     letter,
     index,
-  }));
+  }))
 
   return (
     <span className="inline-block">
@@ -52,5 +52,5 @@ export function RainbowText({ children }: RainbowTextProps) {
         </motion.span>
       ))}
     </span>
-  );
+  )
 }

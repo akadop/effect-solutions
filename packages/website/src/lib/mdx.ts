@@ -1,106 +1,94 @@
-import fs from "node:fs";
-import path from "node:path";
-import matter from "gray-matter";
-import { normalizeDocSlug } from "./normalizeDocSlug";
+import fs from "node:fs"
+import path from "node:path"
+import matter from "gray-matter"
+import { normalizeDocSlug } from "./normalizeDocSlug"
 
-const docsDirectory = path.join(process.cwd(), "docs");
+const docsDirectory = path.join(process.cwd(), "docs")
 
-export type DocGroup = "Setup" | "Core Patterns" | "Ecosystem";
+export type DocGroup = "Setup" | "Core Patterns" | "Ecosystem"
 
-const VALID_GROUPS: Set<string> = new Set([
-  "Setup",
-  "Core Patterns",
-  "Ecosystem",
-]);
+const VALID_GROUPS: Set<string> = new Set(["Setup", "Core Patterns", "Ecosystem"])
 
 function parseGroup(group: unknown): DocGroup {
   if (typeof group === "string" && VALID_GROUPS.has(group)) {
-    return group as DocGroup;
+    return group as DocGroup
   }
-  return "Core Patterns";
+  return "Core Patterns"
 }
 
 export interface DocMetadata {
-  title: string;
-  description?: string;
-  order?: number;
-  draft?: boolean;
-  group: DocGroup;
+  title: string
+  description?: string
+  order?: number
+  draft?: boolean
+  group: DocGroup
 }
 
 export interface Doc extends DocMetadata {
-  slug: string;
-  content: string;
+  slug: string
+  content: string
 }
 
-export { normalizeDocSlug };
+export { normalizeDocSlug }
 
 interface DocFileEntry {
-  fileName: string;
-  baseName: string;
-  slug: string;
-  fullPath: string;
+  fileName: string
+  baseName: string
+  slug: string
+  fullPath: string
 }
 
 function getDocFileEntries(): DocFileEntry[] {
   if (!fs.existsSync(docsDirectory)) {
-    return [];
+    return []
   }
 
   return fs
     .readdirSync(docsDirectory)
     .filter((name) => name.endsWith(".md") || name.endsWith(".mdx"))
     .map((fileName) => {
-      const baseName = fileName.replace(/\.(mdx?|md)$/, "");
+      const baseName = fileName.replace(/\.(mdx?|md)$/, "")
       return {
         fileName,
         baseName,
         slug: normalizeDocSlug(baseName),
         fullPath: path.join(docsDirectory, fileName),
-      } satisfies DocFileEntry;
-    });
+      } satisfies DocFileEntry
+    })
 }
 
 function stripFirstH1(content: string): string {
-  return content.replace(/^#\s+.+$/m, "").trim();
+  return content.replace(/^#\s+.+$/m, "").trim()
 }
 
 function normalizeDocLinkTarget(target: string): string {
   const sanitized = target
     .replace(/^\.\/+/, "")
     .replace(/^\/+/, "")
-    .replace(/\.(mdx?|md)$/, "");
-  return normalizeDocSlug(sanitized);
+    .replace(/\.(mdx?|md)$/, "")
+  return normalizeDocSlug(sanitized)
 }
 
 function processInternalLinks(content: string): string {
-  const relativeDocLink =
-    /\[([^\]]+)\]\((?!https?:\/\/|\/|#)([^)#?]+?)(#[^)]+)?\)/g;
-  const prefixedAbsoluteLink =
-    /\[([^\]]+)\]\(\/((?:\d+-)[^)#?]+?)(?:\.(?:mdx?|md))?(#[^)]+)?\)/g;
+  const relativeDocLink = /\[([^\]]+)\]\((?!https?:\/\/|\/|#)([^)#?]+?)(#[^)]+)?\)/g
+  const prefixedAbsoluteLink = /\[([^\]]+)\]\(\/((?:\d+-)[^)#?]+?)(?:\.(?:mdx?|md))?(#[^)]+)?\)/g
 
   return content
-    .replace(
-      relativeDocLink,
-      (_match, text, target: string, hash: string | undefined) => {
-        const slug = normalizeDocLinkTarget(target);
-        return `[${text}](/${slug}${hash ?? ""})`;
-      },
-    )
-    .replace(
-      prefixedAbsoluteLink,
-      (_match, text, target: string, hash: string | undefined) => {
-        const slug = normalizeDocLinkTarget(target);
-        return `[${text}](/${slug}${hash ?? ""})`;
-      },
-    );
+    .replace(relativeDocLink, (_match, text, target: string, hash: string | undefined) => {
+      const slug = normalizeDocLinkTarget(target)
+      return `[${text}](/${slug}${hash ?? ""})`
+    })
+    .replace(prefixedAbsoluteLink, (_match, text, target: string, hash: string | undefined) => {
+      const slug = normalizeDocLinkTarget(target)
+      return `[${text}](/${slug}${hash ?? ""})`
+    })
 }
 
 function parseDocEntry(entry: DocFileEntry): Doc | null {
   try {
-    const fileContents = fs.readFileSync(entry.fullPath, "utf8");
-    const { data, content } = matter(fileContents);
-    const processedContent = processInternalLinks(stripFirstH1(content));
+    const fileContents = fs.readFileSync(entry.fullPath, "utf8")
+    const { data, content } = matter(fileContents)
+    const processedContent = processInternalLinks(stripFirstH1(content))
 
     return {
       slug: entry.slug,
@@ -110,31 +98,28 @@ function parseDocEntry(entry: DocFileEntry): Doc | null {
       draft: data.draft,
       group: parseGroup(data.group),
       content: processedContent,
-    } satisfies Doc;
+    } satisfies Doc
   } catch {
-    return null;
+    return null
   }
 }
 
 function findDocEntry(slug: string): DocFileEntry | undefined {
-  const normalized = normalizeDocSlug(slug);
-  const entries = getDocFileEntries();
-  return (
-    entries.find((entry) => entry.slug === normalized) ??
-    entries.find((entry) => entry.baseName === slug)
-  );
+  const normalized = normalizeDocSlug(slug)
+  const entries = getDocFileEntries()
+  return entries.find((entry) => entry.slug === normalized) ?? entries.find((entry) => entry.baseName === slug)
 }
 
 export function getAllDocSlugs(): string[] {
-  return getDocFileEntries().map((entry) => entry.slug);
+  return getDocFileEntries().map((entry) => entry.slug)
 }
 
 export function getDocBySlug(slug: string): Doc | null {
-  const entry = findDocEntry(slug);
+  const entry = findDocEntry(slug)
   if (!entry) {
-    return null;
+    return null
   }
-  return parseDocEntry(entry);
+  return parseDocEntry(entry)
 }
 
 export function getAllDocs(): Doc[] {
@@ -143,41 +128,41 @@ export function getAllDocs(): Doc[] {
     .filter((doc): doc is Doc => doc !== null)
     .filter((doc) => {
       if (process.env.NODE_ENV === "production") {
-        return !doc.draft;
+        return !doc.draft
       }
-      return true;
-    });
+      return true
+    })
 
   return docs.sort((a, b) => {
     if (a.order !== undefined && b.order !== undefined) {
-      return a.order - b.order;
+      return a.order - b.order
     }
-    return a.title.localeCompare(b.title);
-  });
+    return a.title.localeCompare(b.title)
+  })
 }
 
 export function getDocTitles(): Record<string, string> {
-  const docs = getAllDocs();
+  const docs = getAllDocs()
   return docs.reduce(
     (acc, doc) => {
-      acc[doc.slug] = doc.title;
-      return acc;
+      acc[doc.slug] = doc.title
+      return acc
     },
     {} as Record<string, string>,
-  );
+  )
 }
 
 export function getOrderedDocSlugs(): string[] {
-  return getAllDocs().map((doc) => doc.slug);
+  return getAllDocs().map((doc) => doc.slug)
 }
 
 export function getNextDocSlug(currentSlug: string): string | null {
-  const slugs = getOrderedDocSlugs();
-  const currentIndex = slugs.indexOf(currentSlug);
+  const slugs = getOrderedDocSlugs()
+  const currentIndex = slugs.indexOf(currentSlug)
 
   if (currentIndex === -1 || currentIndex === slugs.length - 1) {
-    return null;
+    return null
   }
 
-  return slugs[currentIndex + 1] ?? null;
+  return slugs[currentIndex + 1] ?? null
 }

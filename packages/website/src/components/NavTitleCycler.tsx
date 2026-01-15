@@ -1,12 +1,12 @@
-"use client";
+"use client"
 
-import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
-import { cn } from "@/lib/cn";
+import { AnimatePresence, motion } from "motion/react"
+import { useEffect, useState } from "react"
+import { cn } from "@/lib/cn"
 
 interface NavTitleCyclerProps {
-  title: string;
-  className?: string;
+  title: string
+  className?: string
 }
 
 const TITLE_VARIANTS = {
@@ -22,28 +22,27 @@ const TITLE_VARIANTS = {
     y: 24,
     opacity: 0.8,
   },
-} as const;
+} as const
 
 export function NavTitleCycler({ title, className }: NavTitleCyclerProps) {
-  const [renderedTitle, setRenderedTitle] = useState(title);
-  const [animationKey, setAnimationKey] = useState(0);
+  const [renderedTitle, setRenderedTitle] = useState(title)
+  const [animationKey, setAnimationKey] = useState(0)
 
   useEffect(() => {
     if (title === renderedTitle) {
-      return;
+      return
     }
 
-    setRenderedTitle(title);
-    setAnimationKey((key) => key + 1);
-  }, [title, renderedTitle]);
+    setRenderedTitle(title)
+    setAnimationKey((key) => key + 1)
+  }, [title, renderedTitle])
 
   return (
     <div className={cn("relative flex-1 min-w-0", className)}>
       <div
         className="relative grid px-1.5 py-1"
         style={{
-          maskImage:
-            "linear-gradient(to bottom, transparent 0%, black 4px, black calc(100% - 4px), transparent 100%)",
+          maskImage: "linear-gradient(to bottom, transparent 0%, black 4px, black calc(100% - 4px), transparent 100%)",
           WebkitMaskImage:
             "linear-gradient(to bottom, transparent 0%, black 4px, black calc(100% - 4px), transparent 100%)",
         }}
@@ -67,5 +66,5 @@ export function NavTitleCycler({ title, className }: NavTitleCyclerProps) {
         </AnimatePresence>
       </div>
     </div>
-  );
+  )
 }

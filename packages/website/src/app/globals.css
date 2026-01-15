@@ -94,8 +94,8 @@
 
 .prose code {
   font-family:
-    var(--font-commit-mono), ui-monospace, SFMono-Regular, Menlo, Monaco,
-    Consolas, "Liberation Mono", "Courier New", monospace;
+    var(--font-commit-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+    monospace;
   padding: 0.2em 0.4em;
   border-radius: 3px;
   font-size: 0.9em;
@@ -365,10 +365,6 @@
 
   border-radius: 0.35rem;
   color: var(--color-callout-text);
-  background: color-mix(
-    in srgb,
-    var(--color-callout-background) 60%,
-    transparent
-  );
+  background: color-mix(in srgb, var(--color-callout-background) 60%, transparent);
   box-shadow: inset 0 0 0 1px var(--color-callout-border-alt);
 }

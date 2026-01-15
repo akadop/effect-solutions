@@ -7,7 +7,7 @@ const targets = [
     outfile: "dist/effect-solutions-linux-x64",
   },
   { target: "bun-linux-arm64", outfile: "dist/effect-solutions-linux-arm64" },
-];
+]
 
 for (const { target, outfile } of targets) {
   const result = Bun.spawnSync([
@@ -17,15 +17,12 @@ for (const { target, outfile } of targets) {
     "--compile",
     `--target=${target}`,
     `--outfile=${outfile}`,
-  ]);
+  ])
 
   if (!result.success) {
-    console.error(
-      `Failed to build ${target}:`,
-      new TextDecoder().decode(result.stderr),
-    );
-    process.exit(result.exitCode ?? 1);
+    console.error(`Failed to build ${target}:`, new TextDecoder().decode(result.stderr))
+    process.exit(result.exitCode ?? 1)
   } else {
-    console.log(`Built ${outfile} (${target})`);
+    console.log(`Built ${outfile} (${target})`)
   }
 }

@@ -1,41 +1,26 @@
-"use client";
+"use client"
 
-import {
-  type HTMLAttributes,
-  type ReactNode,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-} from "react";
-import { cn } from "@/lib/cn";
-import { useFootnoteContext } from "@/lib/footnote-context";
+import { type HTMLAttributes, type ReactNode, useEffect, useId, useMemo, useRef } from "react"
+import { cn } from "@/lib/cn"
+import { useFootnoteContext } from "@/lib/footnote-context"
 
 interface MarginAsideProps extends HTMLAttributes<HTMLElement> {
-  children: ReactNode;
-  label?: string;
+  children: ReactNode
+  label?: string
 }
 
-export function MarginAside({
-  children,
-  className,
-  label,
-  ...props
-}: MarginAsideProps) {
-  const generatedId = useId();
-  const noteId = useMemo(
-    () => `aside-${generatedId.replace(/[:]/g, "")}`,
-    [generatedId],
-  );
-  const markerRef = useRef<HTMLSpanElement | null>(null);
-  const contentRef = useRef<HTMLSpanElement | null>(null);
-  const { registerAside } = useFootnoteContext();
+export function MarginAside({ children, className, label, ...props }: MarginAsideProps) {
+  const generatedId = useId()
+  const noteId = useMemo(() => `aside-${generatedId.replace(/[:]/g, "")}`, [generatedId])
+  const markerRef = useRef<HTMLSpanElement | null>(null)
+  const contentRef = useRef<HTMLSpanElement | null>(null)
+  const { registerAside } = useFootnoteContext()
 
   useEffect(() => {
-    const marker = markerRef.current;
-    const content = contentRef.current;
+    const marker = markerRef.current
+    const content = contentRef.current
     if (!marker || !content) {
-      return;
+      return
     }
 
     const update = () => {
@@ -45,41 +30,33 @@ export function MarginAside({
         content: content.innerHTML.trim(),
         anchorId: marker.id,
         label,
-      });
-    };
+      })
+    }
 
-    update();
+    update()
 
-    const observer =
-      typeof MutationObserver !== "undefined"
-        ? new MutationObserver(update)
-        : null;
+    const observer = typeof MutationObserver !== "undefined" ? new MutationObserver(update) : null
     observer?.observe(content, {
       subtree: true,
       childList: true,
       characterData: true,
-    });
+    })
 
     return () => {
-      observer?.disconnect();
+      observer?.disconnect()
       registerAside({
         id: noteId,
         element: null,
         content: undefined,
         anchorId: undefined,
         label: undefined,
-      });
-    };
-  }, [noteId, registerAside, label]);
+      })
+    }
+  }, [noteId, registerAside, label])
 
   return (
     <>
-      <span
-        ref={markerRef}
-        id={noteId}
-        aria-hidden="true"
-        className="relative inline-block h-0 w-0 align-top"
-      >
+      <span ref={markerRef} id={noteId} aria-hidden="true" className="relative inline-block h-0 w-0 align-top">
         <span
           ref={contentRef}
           aria-hidden="true"
@@ -99,12 +76,10 @@ export function MarginAside({
         {...props}
       >
         {label ? (
-          <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">
-            {label}
-          </span>
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">{label}</span>
         ) : null}
         {children}
       </aside>
     </>
-  );
+  )
 }

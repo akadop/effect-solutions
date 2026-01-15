@@ -1,14 +1,14 @@
-import { Analytics } from "@vercel/analytics/next";
-import type { Metadata } from "next";
-import Script from "next/script";
-import type { ReactNode } from "react";
-import { SITE_URL } from "@/constants/urls";
-import { commitMono, geistMono } from "@/lib/fonts";
-import "./globals.css";
+import { Analytics } from "@vercel/analytics/next"
+import type { Metadata } from "next"
+import Script from "next/script"
+import type { ReactNode } from "react"
+import { SITE_URL } from "@/constants/urls"
+import { commitMono, geistMono } from "@/lib/fonts"
+import "./globals.css"
 
-const siteName = "Effect Solutions";
+const siteName = "Effect Solutions"
 const siteDescription =
-  "Effect Solutions provides best practices and patterns for building resilient TypeScript applications with Effect.";
+  "Effect Solutions provides best practices and patterns for building resilient TypeScript applications with Effect."
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -50,12 +50,12 @@ export const metadata: Metadata = {
     creator: "@kitlangton",
     site: "@kitlangton",
   },
-};
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: ReactNode;
+  children: ReactNode
 }>) {
   return (
     <html lang="en">
@@ -69,12 +69,10 @@ export default function RootLayout({
           />
         )}
       </head>
-      <body
-        className={`${commitMono.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
-      >
+      <body className={`${commitMono.variable} ${geistMono.variable} antialiased bg-background text-foreground`}>
         {children}
         <Analytics />
       </body>
     </html>
-  );
+  )
 }

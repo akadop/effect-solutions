@@ -1,24 +1,18 @@
-"use client";
+"use client"
 
-import { KeyValueStore } from "@effect/platform/KeyValueStore";
-import { BrowserKeyValueStore } from "@effect/platform-browser";
-import { Effect } from "effect";
-import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { GITHUB_REPO_URL } from "@/constants/urls";
-import { useLessonSfxHandlers } from "@/lib/useLessonNavSfx";
-import { AnsiText } from "./ansi";
-import { runCliCommand } from "./commands";
-import { INITIALIZED_KEY, STORAGE_KEY } from "./services";
-import {
-  findWordBoundary,
-  getAutocomplete,
-  type HistoryEntry,
-  nbsp,
-  PLACEHOLDER_HINTS,
-} from "./utils";
+import { KeyValueStore } from "@effect/platform/KeyValueStore"
+import { BrowserKeyValueStore } from "@effect/platform-browser"
+import { Effect } from "effect"
+import { AnimatePresence, motion } from "motion/react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { GITHUB_REPO_URL } from "@/constants/urls"
+import { useLessonSfxHandlers } from "@/lib/useLessonNavSfx"
+import { AnsiText } from "./ansi"
+import { runCliCommand } from "./commands"
+import { INITIALIZED_KEY, STORAGE_KEY } from "./services"
+import { findWordBoundary, getAutocomplete, type HistoryEntry, nbsp, PLACEHOLDER_HINTS } from "./utils"
 
-const TERMINAL_SOURCE_URL = `${GITHUB_REPO_URL}/blob/main/packages/website/src/components/mdx/Terminal/domain.ts`;
+const TERMINAL_SOURCE_URL = `${GITHUB_REPO_URL}/blob/main/packages/website/src/components/mdx/Terminal/domain.ts`
 
 // =============================================================================
 // Component
@@ -26,288 +20,277 @@ const TERMINAL_SOURCE_URL = `${GITHUB_REPO_URL}/blob/main/packages/website/src/c
 
 const blinkStyle = {
   animation: "blink 1s step-end infinite",
-} as const;
+} as const
 
 export function TerminalDemo() {
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [input, setInput] = useState("");
-  const [cursorPos, setCursorPos] = useState(0);
-  const [commandHistory, setCommandHistory] = useState<string[]>([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
-  const [hintIndex, setHintIndex] = useState(0);
-  const [blinkKey, setBlinkKey] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
-  const [isFocused, setIsFocused] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const outputRef = useRef<HTMLDivElement>(null);
-  const { handleHover, handleClick: playClickSfx } = useLessonSfxHandlers();
+  const [history, setHistory] = useState<HistoryEntry[]>([])
+  const [input, setInput] = useState("")
+  const [cursorPos, setCursorPos] = useState(0)
+  const [commandHistory, setCommandHistory] = useState<string[]>([])
+  const [historyIndex, setHistoryIndex] = useState(-1)
+  const [hintIndex, setHintIndex] = useState(0)
+  const [blinkKey, setBlinkKey] = useState(0)
+  const [isRunning, setIsRunning] = useState(false)
+  const [isFocused, setIsFocused] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const outputRef = useRef<HTMLDivElement>(null)
+  const { handleHover, handleClick: playClickSfx } = useLessonSfxHandlers()
 
   // Cycle through placeholder hints
   useEffect(() => {
     const interval = setInterval(() => {
-      setHintIndex((i) => (i + 1) % PLACEHOLDER_HINTS.length);
-    }, 2000);
-    return () => clearInterval(interval);
-  }, []);
+      setHintIndex((i) => (i + 1) % PLACEHOLDER_HINTS.length)
+    }, 2000)
+    return () => clearInterval(interval)
+  }, [])
 
   const syncCursor = useCallback(() => {
     if (inputRef.current) {
-      setCursorPos(inputRef.current.selectionStart ?? input.length);
+      setCursorPos(inputRef.current.selectionStart ?? input.length)
     }
-  }, [input.length]);
+  }, [input.length])
 
   const resetBlink = useCallback(() => {
-    setBlinkKey((k) => k + 1);
-  }, []);
+    setBlinkKey((k) => k + 1)
+  }, [])
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (isRunning) return;
+      e.preventDefault()
+      if (isRunning) return
 
-      const fullCommand = `tasks ${input}`.trim();
-      setIsRunning(true);
+      const fullCommand = `tasks ${input}`.trim()
+      setIsRunning(true)
 
       try {
-        const result = await runCliCommand(input);
-        setHistory((h) => [...h, { input: fullCommand, ...result }]);
+        const result = await runCliCommand(input)
+        setHistory((h) => [...h, { input: fullCommand, ...result }])
       } catch (err) {
-        setHistory((h) => [
-          ...h,
-          { input: fullCommand, output: String(err), isError: true },
-        ]);
+        setHistory((h) => [...h, { input: fullCommand, output: String(err), isError: true }])
       }
 
       if (input.trim()) {
-        setCommandHistory((h) => [...h, input]);
+        setCommandHistory((h) => [...h, input])
       }
-      setHistoryIndex(-1);
-      setInput("");
-      setCursorPos(0);
-      setIsRunning(false);
+      setHistoryIndex(-1)
+      setInput("")
+      setCursorPos(0)
+      setIsRunning(false)
       // Refocus after React re-renders with disabled=false
-      setTimeout(() => inputRef.current?.focus(), 0);
+      setTimeout(() => inputRef.current?.focus(), 0)
     },
     [input, isRunning],
-  );
+  )
 
-  const cursorAtEnd = cursorPos >= input.length;
-  const autocomplete = getAutocomplete(input, cursorAtEnd);
+  const cursorAtEnd = cursorPos >= input.length
+  const autocomplete = getAutocomplete(input, cursorAtEnd)
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      const inp = inputRef.current;
-      if (!inp) return;
+      const inp = inputRef.current
+      if (!inp) return
 
       if (e.ctrlKey && e.key === "c") {
-        e.preventDefault();
+        e.preventDefault()
         if (input) {
-          setHistory((h) => [...h, { input: `tasks ${input}^C`, output: "" }]);
-          setInput("");
-          setCursorPos(0);
+          setHistory((h) => [...h, { input: `tasks ${input}^C`, output: "" }])
+          setInput("")
+          setCursorPos(0)
         }
-        resetBlink();
-        return;
+        resetBlink()
+        return
       }
       if (e.ctrlKey && e.key === "l") {
-        e.preventDefault();
-        setHistory([]);
-        return;
+        e.preventDefault()
+        setHistory([])
+        return
       }
       if (e.ctrlKey && e.key === "a") {
-        e.preventDefault();
-        inp.setSelectionRange(0, 0);
-        setCursorPos(0);
-        resetBlink();
-        return;
+        e.preventDefault()
+        inp.setSelectionRange(0, 0)
+        setCursorPos(0)
+        resetBlink()
+        return
       }
       if (e.ctrlKey && e.key === "e") {
-        e.preventDefault();
-        inp.setSelectionRange(input.length, input.length);
-        setCursorPos(input.length);
-        resetBlink();
-        return;
+        e.preventDefault()
+        inp.setSelectionRange(input.length, input.length)
+        setCursorPos(input.length)
+        resetBlink()
+        return
       }
       if (e.ctrlKey && e.key === "w") {
-        e.preventDefault();
-        const pos = inp.selectionStart ?? input.length;
-        const newPos = findWordBoundary(input, pos, "left");
-        const newInput = input.slice(0, newPos) + input.slice(pos);
-        setInput(newInput);
-        setCursorPos(newPos);
-        setTimeout(() => inp.setSelectionRange(newPos, newPos), 0);
-        resetBlink();
-        return;
+        e.preventDefault()
+        const pos = inp.selectionStart ?? input.length
+        const newPos = findWordBoundary(input, pos, "left")
+        const newInput = input.slice(0, newPos) + input.slice(pos)
+        setInput(newInput)
+        setCursorPos(newPos)
+        setTimeout(() => inp.setSelectionRange(newPos, newPos), 0)
+        resetBlink()
+        return
       }
       if (e.ctrlKey && e.key === "u") {
-        e.preventDefault();
-        const pos = inp.selectionStart ?? input.length;
-        const newInput = input.slice(pos);
-        setInput(newInput);
-        setCursorPos(0);
-        setTimeout(() => inp.setSelectionRange(0, 0), 0);
-        resetBlink();
-        return;
+        e.preventDefault()
+        const pos = inp.selectionStart ?? input.length
+        const newInput = input.slice(pos)
+        setInput(newInput)
+        setCursorPos(0)
+        setTimeout(() => inp.setSelectionRange(0, 0), 0)
+        resetBlink()
+        return
       }
       if (e.ctrlKey && e.key === "k") {
-        e.preventDefault();
-        const pos = inp.selectionStart ?? input.length;
-        setInput(input.slice(0, pos));
-        resetBlink();
-        return;
+        e.preventDefault()
+        const pos = inp.selectionStart ?? input.length
+        setInput(input.slice(0, pos))
+        resetBlink()
+        return
       }
       if (e.metaKey && e.key === "Backspace") {
-        e.preventDefault();
-        setInput("");
-        setCursorPos(0);
-        resetBlink();
-        return;
+        e.preventDefault()
+        setInput("")
+        setCursorPos(0)
+        resetBlink()
+        return
       }
       if (e.altKey && e.key === "Backspace") {
-        e.preventDefault();
-        const pos = inp.selectionStart ?? input.length;
-        const newPos = findWordBoundary(input, pos, "left");
-        const newInput = input.slice(0, newPos) + input.slice(pos);
-        setInput(newInput);
-        setCursorPos(newPos);
-        setTimeout(() => inp.setSelectionRange(newPos, newPos), 0);
-        resetBlink();
-        return;
+        e.preventDefault()
+        const pos = inp.selectionStart ?? input.length
+        const newPos = findWordBoundary(input, pos, "left")
+        const newInput = input.slice(0, newPos) + input.slice(pos)
+        setInput(newInput)
+        setCursorPos(newPos)
+        setTimeout(() => inp.setSelectionRange(newPos, newPos), 0)
+        resetBlink()
+        return
       }
       if (e.altKey && e.key === "ArrowLeft") {
-        e.preventDefault();
-        const pos = inp.selectionStart ?? 0;
-        const newPos = findWordBoundary(input, pos, "left");
-        inp.setSelectionRange(newPos, newPos);
-        setCursorPos(newPos);
-        resetBlink();
-        return;
+        e.preventDefault()
+        const pos = inp.selectionStart ?? 0
+        const newPos = findWordBoundary(input, pos, "left")
+        inp.setSelectionRange(newPos, newPos)
+        setCursorPos(newPos)
+        resetBlink()
+        return
       }
       if (e.altKey && e.key === "ArrowRight") {
-        e.preventDefault();
-        const pos = inp.selectionStart ?? input.length;
-        const newPos = findWordBoundary(input, pos, "right");
-        inp.setSelectionRange(newPos, newPos);
-        setCursorPos(newPos);
-        resetBlink();
-        return;
+        e.preventDefault()
+        const pos = inp.selectionStart ?? input.length
+        const newPos = findWordBoundary(input, pos, "right")
+        inp.setSelectionRange(newPos, newPos)
+        setCursorPos(newPos)
+        resetBlink()
+        return
       }
       if (e.metaKey && e.key === "ArrowLeft") {
-        e.preventDefault();
-        inp.setSelectionRange(0, 0);
-        setCursorPos(0);
-        resetBlink();
-        return;
+        e.preventDefault()
+        inp.setSelectionRange(0, 0)
+        setCursorPos(0)
+        resetBlink()
+        return
       }
       if (e.metaKey && e.key === "ArrowRight") {
-        e.preventDefault();
-        inp.setSelectionRange(input.length, input.length);
-        setCursorPos(input.length);
-        resetBlink();
-        return;
+        e.preventDefault()
+        inp.setSelectionRange(input.length, input.length)
+        setCursorPos(input.length)
+        resetBlink()
+        return
       }
       if (e.key === "Tab") {
-        e.preventDefault();
+        e.preventDefault()
         if (autocomplete) {
-          const newInput = input + autocomplete;
-          setInput(newInput);
-          setCursorPos(newInput.length);
-          setTimeout(
-            () => inp.setSelectionRange(newInput.length, newInput.length),
-            0,
-          );
+          const newInput = input + autocomplete
+          setInput(newInput)
+          setCursorPos(newInput.length)
+          setTimeout(() => inp.setSelectionRange(newInput.length, newInput.length), 0)
         }
-        resetBlink();
-        return;
+        resetBlink()
+        return
       }
       if (e.key === "ArrowUp") {
-        e.preventDefault();
-        const newIndex = historyIndex + 1;
+        e.preventDefault()
+        const newIndex = historyIndex + 1
         if (newIndex < commandHistory.length) {
-          setHistoryIndex(newIndex);
-          const cmd =
-            commandHistory[commandHistory.length - 1 - newIndex] ?? "";
-          setInput(cmd);
-          setCursorPos(cmd.length);
-          setTimeout(() => inp.setSelectionRange(cmd.length, cmd.length), 0);
+          setHistoryIndex(newIndex)
+          const cmd = commandHistory[commandHistory.length - 1 - newIndex] ?? ""
+          setInput(cmd)
+          setCursorPos(cmd.length)
+          setTimeout(() => inp.setSelectionRange(cmd.length, cmd.length), 0)
         }
-        resetBlink();
-        return;
+        resetBlink()
+        return
       }
       if (e.key === "ArrowDown") {
-        e.preventDefault();
-        const newIndex = historyIndex - 1;
+        e.preventDefault()
+        const newIndex = historyIndex - 1
         if (newIndex >= 0) {
-          setHistoryIndex(newIndex);
-          const cmd =
-            commandHistory[commandHistory.length - 1 - newIndex] ?? "";
-          setInput(cmd);
-          setCursorPos(cmd.length);
-          setTimeout(() => inp.setSelectionRange(cmd.length, cmd.length), 0);
+          setHistoryIndex(newIndex)
+          const cmd = commandHistory[commandHistory.length - 1 - newIndex] ?? ""
+          setInput(cmd)
+          setCursorPos(cmd.length)
+          setTimeout(() => inp.setSelectionRange(cmd.length, cmd.length), 0)
         } else {
-          setHistoryIndex(-1);
-          setInput("");
-          setCursorPos(0);
+          setHistoryIndex(-1)
+          setInput("")
+          setCursorPos(0)
         }
-        resetBlink();
-        return;
+        resetBlink()
+        return
       }
       if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
-        resetBlink();
-        setTimeout(syncCursor, 0);
-        return;
+        resetBlink()
+        setTimeout(syncCursor, 0)
+        return
       }
-      resetBlink();
+      resetBlink()
     },
     [historyIndex, commandHistory, input, autocomplete, syncCursor, resetBlink],
-  );
+  )
 
   const handleInput = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      setInput(e.target.value);
-      syncCursor();
+      setInput(e.target.value)
+      syncCursor()
     },
     [syncCursor],
-  );
+  )
 
   const handleInputClick = useCallback(() => {
-    syncCursor();
-    setBlinkKey((k) => k + 1);
-  }, [syncCursor]);
+    syncCursor()
+    setBlinkKey((k) => k + 1)
+  }, [syncCursor])
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: scroll on history change
   useEffect(() => {
     requestAnimationFrame(() => {
       if (outputRef.current) {
-        outputRef.current.scrollTop = outputRef.current.scrollHeight;
+        outputRef.current.scrollTop = outputRef.current.scrollHeight
       }
-    });
-  }, [history]);
+    })
+  }, [history])
 
   const handleContainerClick = useCallback(() => {
-    inputRef.current?.focus();
-  }, []);
+    inputRef.current?.focus()
+  }, [])
 
   const handleReset = useCallback(
     (e: React.MouseEvent) => {
-      e.stopPropagation();
-      playClickSfx();
-      setHistory([]);
+      e.stopPropagation()
+      playClickSfx()
+      setHistory([])
       // Clear storage via KeyValueStore
       Effect.gen(function* () {
-        const kv = yield* KeyValueStore;
-        yield* kv.remove(STORAGE_KEY);
-        yield* kv.remove(INITIALIZED_KEY);
-      }).pipe(
-        Effect.provide(BrowserKeyValueStore.layerLocalStorage),
-        Effect.runPromise,
-      );
+        const kv = yield* KeyValueStore
+        yield* kv.remove(STORAGE_KEY)
+        yield* kv.remove(INITIALIZED_KEY)
+      }).pipe(Effect.provide(BrowserKeyValueStore.layerLocalStorage), Effect.runPromise)
     },
     [playClickSfx],
-  );
+  )
 
-  const beforeCursor = input.slice(0, cursorPos);
-  const afterCursor = input.slice(cursorPos);
+  const beforeCursor = input.slice(0, cursorPos)
+  const afterCursor = input.slice(cursorPos)
 
   return (
     <>
@@ -326,8 +309,8 @@ export function TerminalDemo() {
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => {
-                e.stopPropagation();
-                playClickSfx();
+                e.stopPropagation()
+                playClickSfx()
               }}
               onMouseEnter={handleHover}
               className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors"
@@ -353,9 +336,7 @@ export function TerminalDemo() {
               <div className="px-4 py-3">
                 <div className="text-green-500">{entry.input}</div>
                 {entry.output && (
-                  <div
-                    className={`whitespace-pre-wrap mt-1 ${entry.isError ? "text-red-400" : "text-neutral-400"}`}
-                  >
+                  <div className={`whitespace-pre-wrap mt-1 ${entry.isError ? "text-red-400" : "text-neutral-400"}`}>
                     <AnsiText text={entry.output} />
                   </div>
                 )}
@@ -363,9 +344,7 @@ export function TerminalDemo() {
             </div>
           ))}
 
-          {history.length > 0 && (
-            <div className="border-t border-neutral-800/50" />
-          )}
+          {history.length > 0 && <div className="border-t border-neutral-800/50" />}
 
           <form onSubmit={handleSubmit} className="relative px-4 py-3">
             <div className="flex items-center">
@@ -374,16 +353,10 @@ export function TerminalDemo() {
                 <span className="relative">
                   <span className="text-green-500">{nbsp(beforeCursor)}</span>
                   {isFocused && (
-                    <span
-                      key={blinkKey}
-                      className="absolute top-0 bottom-0 w-0.5 bg-green-500"
-                      style={blinkStyle}
-                    />
+                    <span key={blinkKey} className="absolute top-0 bottom-0 w-0.5 bg-green-500" style={blinkStyle} />
                   )}
                   <span className="text-green-500">{nbsp(afterCursor)}</span>
-                  {cursorAtEnd && (
-                    <span className="text-neutral-600">{autocomplete}</span>
-                  )}
+                  {cursorAtEnd && <span className="text-neutral-600">{autocomplete}</span>}
                 </span>
               ) : (
                 <span className="relative">
@@ -429,5 +402,5 @@ export function TerminalDemo() {
         </div>
       </div>
     </>
-  );
+  )
 }

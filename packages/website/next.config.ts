@@ -1,5 +1,5 @@
-import createMDX from "@next/mdx";
-import type { NextConfig } from "next";
+import createMDX from "@next/mdx"
+import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
@@ -20,15 +20,15 @@ const nextConfig: NextConfig = {
         destination: "/:slug",
         permanent: true,
       },
-    ];
+    ]
   },
-};
+}
 
 const withMDX = createMDX({
   options: {
     remarkPlugins: [],
     rehypePlugins: [],
   },
-});
+})
 
-export default withMDX(nextConfig);
+export default withMDX(nextConfig)

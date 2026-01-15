@@ -1,23 +1,22 @@
-"use client";
+"use client"
 
-import { SkullIcon } from "@phosphor-icons/react";
-import { motion, useInView } from "motion/react";
-import { useRef } from "react";
-import { useLessonSfxHandlers } from "@/lib/useLessonNavSfx";
+import { SkullIcon } from "@phosphor-icons/react"
+import { motion, useInView } from "motion/react"
+import { useRef } from "react"
+import { useLessonSfxHandlers } from "@/lib/useLessonNavSfx"
 
 export function EffectOrFooter() {
-  const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: false, margin: "-100px" });
-  const { handleHover, handleClick, handleFocusVisible } =
-    useLessonSfxHandlers();
+  const ref = useRef<HTMLDivElement>(null)
+  const isInView = useInView(ref, { once: false, margin: "-100px" })
+  const { handleHover, handleClick, handleFocusVisible } = useLessonSfxHandlers()
 
   const navSfxProps = {
     onMouseEnter: handleHover,
     onClick: handleClick,
     onFocus: handleFocusVisible,
-  } as const;
+  } as const
 
-  const words = ["EFFECT", "OR"];
+  const words = ["EFFECT", "OR"]
 
   return (
     <motion.div
@@ -66,5 +65,5 @@ export function EffectOrFooter() {
         <SkullIcon className="h-4 w-4" weight="fill" />
       </a>
     </motion.div>
-  );
+  )
 }

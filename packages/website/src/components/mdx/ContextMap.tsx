@@ -1,31 +1,22 @@
-"use client";
+"use client"
 
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/cn"
 
 interface ContextEntry {
-  key: string;
-  service: string;
-  description?: string;
+  key: string
+  service: string
+  description?: string
 }
 
 interface ContextMapProps {
-  entries: ContextEntry[];
-  title?: string;
-  className?: string;
+  entries: ContextEntry[]
+  title?: string
+  className?: string
 }
 
-export function ContextMap({
-  entries,
-  title = "Context",
-  className,
-}: ContextMapProps) {
+export function ContextMap({ entries, title = "Context", className }: ContextMapProps) {
   return (
-    <div
-      className={cn(
-        "not-prose my-8 border-y border-neutral-800 bg-neutral-950 p-6",
-        className,
-      )}
-    >
+    <div className={cn("not-prose my-8 border-y border-neutral-800 bg-neutral-950 p-6", className)}>
       <div className="mb-4 flex items-center gap-2">
         <div className="text-sm font-medium text-neutral-400">{title}</div>
         <div className="text-xs text-neutral-600">Map&lt;string, any&gt;</div>
@@ -40,25 +31,15 @@ export function ContextMap({
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 space-y-2">
                 <div className="flex items-center gap-2">
-                  <div className="bg-blue-500/10 px-2 py-1 text-xs font-mono text-blue-400">
-                    {entry.key}
-                  </div>
+                  <div className="bg-blue-500/10 px-2 py-1 text-xs font-mono text-blue-400">{entry.key}</div>
                   <div className="text-neutral-600">→</div>
-                  <div className="bg-green-500/10 px-2 py-1 text-xs font-mono text-green-400">
-                    {entry.service}
-                  </div>
+                  <div className="bg-green-500/10 px-2 py-1 text-xs font-mono text-green-400">{entry.service}</div>
                 </div>
 
-                {entry.description && (
-                  <div className="text-sm text-neutral-500">
-                    {entry.description}
-                  </div>
-                )}
+                {entry.description && <div className="text-sm text-neutral-500">{entry.description}</div>}
               </div>
 
-              <div className="flex-shrink-0 bg-neutral-800 px-2 py-0.5 text-xs font-mono text-neutral-500">
-                {index}
-              </div>
+              <div className="flex-shrink-0 bg-neutral-800 px-2 py-0.5 text-xs font-mono text-neutral-500">{index}</div>
             </div>
           </div>
         ))}
@@ -78,5 +59,5 @@ export function ContextMap({
         <div className="font-mono">unsafeMap.size = {entries.length}</div>
       </div>
     </div>
-  );
+  )
 }

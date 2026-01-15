@@ -1,16 +1,14 @@
-import type { Metadata } from "next";
-import { DocList } from "@/components/DocList";
-import { SITE_DEPLOYMENT_URL } from "@/constants/urls";
-import { getAllDocs } from "@/lib/mdx";
+import type { Metadata } from "next"
+import { DocList } from "@/components/DocList"
+import { SITE_DEPLOYMENT_URL } from "@/constants/urls"
+import { getAllDocs } from "@/lib/mdx"
 
 export const metadata: Metadata = {
   title: "Effect Solutions",
-  description:
-    "Effect Solutions guides for building Effect TypeScript applications",
+  description: "Effect Solutions guides for building Effect TypeScript applications",
   openGraph: {
     title: "Effect Solutions",
-    description:
-      "Effect Solutions guides for building Effect TypeScript applications",
+    description: "Effect Solutions guides for building Effect TypeScript applications",
     url: SITE_DEPLOYMENT_URL,
     siteName: "Effect Solutions",
     locale: "en_US",
@@ -27,14 +25,13 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Effect Solutions",
-    description:
-      "Effect Solutions guides for building Effect TypeScript applications",
+    description: "Effect Solutions guides for building Effect TypeScript applications",
     images: [`${SITE_DEPLOYMENT_URL}/og/home.png`],
   },
-};
+}
 
 export default async function HomePage() {
-  const docs = getAllDocs();
+  const docs = getAllDocs()
 
   return (
     <main className="mx-auto max-w-screen-md border-x border-neutral-800 flex-1 flex flex-col w-full min-h-[calc(100vh-8rem)]">
@@ -46,5 +43,5 @@ export default async function HomePage() {
         </div>
       )}
     </main>
-  );
+  )
 }

@@ -125,11 +125,18 @@ The CLI (`packages/cli/`) provides offline access to documentation:
 
 ```bash
 bunx effect-solutions list          # List all topics
-bunx effect-solutions show <slug>   # Show specific topic
+bunx effect-solutions show <slug>   # Show specific topic (supports multiple)
+bunx effect-solutions setup         # Clone Effect source to .reference/effect/
 bunx effect-solutions open-issue    # Leave feedback
 ```
 
 Built with Effect CLI and Schema for validation (from `effect/Schema`). Tests in `packages/cli/src/cli.test.ts` validate all commands.
+
+**Maintenance:** When adding/removing docs, update the topics list in:
+- `<!-- effect-solutions:start -->` block at the bottom of this file
+- `packages/website/src/lib/llm-instructions.ts` (the template for agent files)
+
+Run `bun run dev:cli -- list` to see current non-draft topics.
 
 ## Testing
 
@@ -202,10 +209,13 @@ Effect-based CLI using:
 <!-- effect-solutions:start -->
 ## Effect Best Practices
 
-**Before implementing Effect features**, run `effect-solutions list` and read the relevant guide.
+**IMPORTANT:** Always consult effect-solutions before writing Effect code.
 
-Topics include: services and layers, data modeling, error handling, configuration, testing, HTTP clients, CLIs, observability, and project structure.
+1. Run `effect-solutions list` to see available guides
+2. Run `effect-solutions show <topic>...` for relevant patterns (supports multiple topics)
+3. Search `.reference/effect/` for real implementations (run `effect-solutions setup` first)
 
-**Effect Source Reference:** `~/.local/share/effect-solutions/effect`
-Search here for real implementations when docs aren't enough.
+Topics: quick-start, project-setup, tsconfig, basics, services-and-layers, data-modeling, error-handling, config, testing, cli.
+
+Never guess at Effect patterns - check the guide first.
 <!-- effect-solutions:end -->

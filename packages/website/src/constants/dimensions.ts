@@ -22,4 +22,4 @@ export const dimensions = {
     maxWidth: "48rem", // max-w-screen-md
     sidebarGap: "1.5rem", // ml-6
   },
-} as const;
+} as const

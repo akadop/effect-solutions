@@ -1,9 +1,9 @@
-import { BriefcaseIcon, GlobeIcon } from "@phosphor-icons/react/dist/ssr";
-import type { CSSProperties, ReactNode } from "react";
-import { Suspense } from "react";
-import { KeyboardNavigator } from "@/components/og/KeyboardNavigator";
-import { commitMono } from "@/lib/fonts";
-import { getAllOgSpecs } from "@/lib/og-specs";
+import { BriefcaseIcon, GlobeIcon } from "@phosphor-icons/react/dist/ssr"
+import type { CSSProperties, ReactNode } from "react"
+import { Suspense } from "react"
+import { KeyboardNavigator } from "@/components/og/KeyboardNavigator"
+import { commitMono } from "@/lib/fonts"
+import { getAllOgSpecs } from "@/lib/og-specs"
 
 const DEFAULTS = {
   tag: "EFFECT.SOLUTIONS",
@@ -13,33 +13,29 @@ const DEFAULTS = {
   footRight: "EFFECT.SOLUTIONS",
   accent: "#ffffff",
   background: "#030405",
-} as const;
+} as const
 
-type FieldKey = keyof typeof DEFAULTS;
+type FieldKey = keyof typeof DEFAULTS
 
-type SearchParams = Record<string, string | string[] | undefined>;
+type SearchParams = Record<string, string | string[] | undefined>
 
 function getValue(params: SearchParams, key: FieldKey) {
-  const value = params[key];
+  const value = params[key]
   if (Array.isArray(value)) {
-    return value.at(-1) ?? DEFAULTS[key];
+    return value.at(-1) ?? DEFAULTS[key]
   }
-  return (value ?? DEFAULTS[key]) as string;
+  return (value ?? DEFAULTS[key]) as string
 }
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic"
 
-export default async function OgTemplate({
-  searchParams,
-}: {
-  searchParams: Promise<SearchParams>;
-}) {
-  const params = await searchParams;
-  const title = getValue(params, "title");
-  const subtitle = getValue(params, "subtitle");
-  const background = getValue(params, "background");
+export default async function OgTemplate({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  const params = await searchParams
+  const title = getValue(params, "title")
+  const subtitle = getValue(params, "subtitle")
+  const background = getValue(params, "background")
 
-  const specs = getAllOgSpecs();
+  const specs = getAllOgSpecs()
 
   return (
     <>
@@ -101,7 +97,7 @@ export default async function OgTemplate({
         </div>
       </section>
     </>
-  );
+  )
 }
 
 function Cell({
@@ -109,16 +105,13 @@ function Cell({
   className = "",
   style,
 }: {
-  children?: ReactNode;
-  className?: string;
-  style?: CSSProperties;
+  children?: ReactNode
+  className?: string
+  style?: CSSProperties
 }) {
   return (
-    <div
-      className={`flex items-center border-white/20 px-8 py-5 ${className}`}
-      style={style}
-    >
+    <div className={`flex items-center border-white/20 px-8 py-5 ${className}`} style={style}>
       {children}
     </div>
-  );
+  )
 }

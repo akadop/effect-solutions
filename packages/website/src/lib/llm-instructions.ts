@@ -26,7 +26,7 @@ export function generateLLMInstructions(): string {
 - [ ] TypeScript compiler configuration
 - [ ] Package scripts
 - [ ] Agent instruction files
-- [ ] Clone Effect source
+- [ ] Set up Effect source reference
 - [ ] Summary
 
 ---
@@ -99,28 +99,28 @@ These tell AI assistants about project tools.
 \`\`\`markdown
 ## Effect Best Practices
 
-**Before implementing Effect features**, run \`effect-solutions list\` and read the relevant guide.
+**IMPORTANT:** Always consult effect-solutions before writing Effect code.
 
-Topics include: services and layers, data modeling, error handling, configuration, testing, HTTP clients, CLIs, observability, and project structure.
+1. Run \`effect-solutions list\` to see available guides
+2. Run \`effect-solutions show <topic>...\` for relevant patterns (supports multiple topics)
+3. Search \`.reference/effect/\` for real implementations (run \`effect-solutions setup\` first)
 
-**Effect Source Reference:** \`~/.local/share/effect-solutions/effect\`
-Search here for real implementations when docs aren't enough.
+Topics: quick-start, project-setup, tsconfig, basics, services-and-layers, data-modeling, error-handling, config, testing, cli.
+
+Never guess at Effect patterns - check the guide first.
 \`\`\`
 
 ---
 
-## Clone Effect Source
+## Set Up Effect Source Reference
 
-- Check if \`~/.local/share/effect-solutions/effect\` exists
+Run \`effect-solutions setup\` in the project root. This:
+- Clones the Effect monorepo to \`.reference/effect/\` (shallow clone)
+- Adds \`.reference/\` to \`.gitignore\`
 
-**If exists:**
-- Inform them it's already cloned
-- Run \`git pull\` to get latest changes
-- If pull fails: explain issue, ask about re-cloning
+**If \`.reference/effect/\` already exists:** Running setup again will pull the latest changes.
 
-**If doesn't exist:**
-- Ask if they want to clone (provides local implementation examples and API details)
-- If yes: clone \`https://github.com/Effect-TS/effect.git\` to \`~/.local/share/effect-solutions/effect\`
+**Why this matters:** AI agents can search \`.reference/effect/\` for real Effect implementations, type definitions, and patterns when documentation isn't enough.
 
 ---
 
@@ -132,5 +132,5 @@ Provide summary:
 - Files created/modified
 - Any errors encountered and how they were resolved
 
-Offer to help explore Effect Solutions topics or start working with Effect patterns.`;
+Offer to help explore Effect Solutions topics or start working with Effect patterns.`
 }

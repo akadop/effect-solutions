@@ -1,7 +1,7 @@
-"use client";
+"use client"
 
-import { useCallback } from "react";
-import { useTonePlayer } from "./useTonePlayer";
+import { useCallback } from "react"
+import { useTonePlayer } from "./useTonePlayer"
 
 const LESSON_SFX = {
   hover: {
@@ -16,81 +16,80 @@ const LESSON_SFX = {
     type: "sine" as OscillatorType,
     volume: 0.025,
   },
-} as const;
+} as const
 
-export type LessonSfxName = keyof typeof LESSON_SFX;
+export type LessonSfxName = keyof typeof LESSON_SFX
 
 export function useLessonNavSfx() {
-  const { playTone } = useTonePlayer();
+  const { playTone } = useTonePlayer()
 
   const playSfx = useCallback(
     (effect: LessonSfxName) => {
-      playTone(LESSON_SFX[effect]);
+      playTone(LESSON_SFX[effect])
     },
     [playTone],
-  );
+  )
 
   const playHoverTone = useCallback(() => {
-    playSfx("hover");
-  }, [playSfx]);
+    playSfx("hover")
+  }, [playSfx])
 
   const playTapTone = useCallback(() => {
-    playSfx("tap");
-  }, [playSfx]);
+    playSfx("tap")
+  }, [playSfx])
 
   const wrapSfx = useCallback(
     <E>(effect: LessonSfxName | null, handler?: (event: E) => void) => {
       if (!effect) {
-        return handler;
+        return handler
       }
 
       return (event: E) => {
-        handler?.(event);
-        playSfx(effect);
-      };
+        handler?.(event)
+        playSfx(effect)
+      }
     },
     [playSfx],
-  );
+  )
 
-  return { playHoverTone, playTapTone, playSfx, wrapSfx };
+  return { playHoverTone, playTapTone, playSfx, wrapSfx }
 }
 
 interface LessonSfxHandlersOptions {
-  hover?: LessonSfxName | null;
-  click?: LessonSfxName | null;
-  focusVisible?: LessonSfxName | null;
+  hover?: LessonSfxName | null
+  click?: LessonSfxName | null
+  focusVisible?: LessonSfxName | null
 }
 
 export function useLessonSfxHandlers(options?: LessonSfxHandlersOptions) {
-  const { playSfx } = useLessonNavSfx();
+  const { playSfx } = useLessonNavSfx()
 
-  const hoverSfx = options?.hover ?? "hover";
-  const clickSfx = options?.click ?? "tap";
-  const focusVisibleSfx =
-    options?.focusVisible ?? (hoverSfx === null ? null : hoverSfx);
+  const hoverSfx = options?.hover ?? "hover"
+  const clickSfx = options?.click ?? "tap"
+  const focusVisibleSfx = options?.focusVisible ?? (hoverSfx === null ? null : hoverSfx)
 
   const handleHover = useCallback(() => {
     if (hoverSfx) {
-      playSfx(hoverSfx);
+      playSfx(hoverSfx)
     }
-  }, [hoverSfx, playSfx]);
+  }, [hoverSfx, playSfx])
 
   const handleClick = useCallback(() => {
     if (clickSfx) {
-      playSfx(clickSfx);
+      playSfx(clickSfx)
     }
-  }, [clickSfx, playSfx]);
+  }, [clickSfx, playSfx])
 
   const handleFocusVisible = useCallback(() => {
     if (focusVisibleSfx) {
-      playSfx(focusVisibleSfx);
+      playSfx(focusVisibleSfx)
     }
-  }, [focusVisibleSfx, playSfx]);
+  }, [focusVisibleSfx, playSfx])
 
   return {
     handleHover,
     handleClick,
     handleFocusVisible,
     play: playSfx,
-  };
+  }
 }
